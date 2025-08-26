@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle - Word List</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Wordle - Valid Word List</h1>
+    <p>Below is the list of valid 5-letter words for the game. These are the words you can use for your guesses.</p>
+    <div id="word-list">
+        {% for word in words %}
+            <div class="word-item">{{ word }}</div>
+        {% endfor %}
+    </div>
+    <a href="/">Back to Game</a>
+</body>
+</html>
