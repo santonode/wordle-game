@@ -9,32 +9,46 @@ app.secret_key = os.urandom(24)
 
 # Initialize SQLite database
 def init_db():
-    with sqlite3.connect('wordle.db') as conn:
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS daily_word (
-            date TEXT PRIMARY KEY,
-            word TEXT NOT NULL
-        )''')
-        conn.commit()
+    try:
+        with sqlite3.connect('wordle.db') as conn:
+            c = conn.cursor()
+            c.execute('''CREATE TABLE IF NOT EXISTS daily_word (
+                date TEXT PRIMARY KEY,
+                word TEXT NOT NULL
+            )''')
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Database initialization error: {e}")
 
 # Load word list
-with open('words.txt', 'r') as f:
-    WORDS = [word.strip().upper() for word in f.readlines()]
+try:
+    with open('words.txt', 'r') as f:
+        WORDS = [word.strip().upper() for word in f.readlines()]
+except FileNotFoundError:
+    print("Error: words.txt not found")
+    WORDS = ['APPLE', 'BREAD', 'CLOUD', 'DREAM']  # Fallback list
 
 # Get or set daily word
 def get_daily_word():
     today = str(date.today())
-    with sqlite3.connect('wordle.db') as conn:
-        c = conn.cursor()
-        c.execute('SELECT word FROM daily_word WHERE date = ?', (today,))
-        result = c.fetchone()
-        if result:
-            return result[0]
-        else:
-            word = random.choice(WORDS)
-            c.execute('INSERT INTO daily_word (date, word) VALUES (?, ?)', (today, word))
-            conn.commit()
-            return word
+    try:
+        with sqlite3.connect('wordle.db') as conn:
+            c = conn.cursor()
+            c.execute('SELECT word FROM daily_word WHERE date = ?', (today,))
+            result = c.fetchone()
+            if result:
+                return result[0]
+            else:
+                word = random.choice(WORDS)
+                c.execute('INSERT INTO daily_word (date, word) VALUES (?, ?)', (today, word))
+                conn.commit()
+                return word
+    except sqlite3.Error as e:
+        print(f"Database error in get_daily_word: {e}")
+        return random.choice(WORDS)  # Fallback to random word
+
+# Initialize database on app startup
+init_db()
 
 @app.route('/')
 def index():
@@ -130,5 +144,4 @@ def toggle_hard_mode():
     return jsonify({'hard_mode': session['hard_mode']})
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
