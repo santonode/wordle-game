@@ -1,91 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wordle</title>
-<link rel="stylesheet" href="/static/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-<h1>Wordle</h1>
-<div id="game-board"></div>
-<div id="input-area">
-<input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
-<button onclick="submitGuess()">Submit</button>
-<button onclick="toggleHardMode()">Toggle Hard Mode</button>
-<p id="hard-mode-status">Hard Mode: Off</p>
-</div>
-<p id="message"></p>
-<textarea id="share-text" readonly></textarea>
-<button onclick="copyShareText()">Share Results</button>
+    <h1>Wordle</h1>
+    <div id="game-board"></div>
+    <div id="input-area">
+        <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
+        <button onclick="submitGuess()">Submit</button>
+        <button onclick="toggleHardMode()">Toggle Hard Mode</button>
+        <p id="hard-mode-status">Hard Mode: Off</p>
+    </div>
+    <p id="message"></p>
+    <textarea id="share-text" readonly></textarea>
+    <button onclick="copyShareText()">Share Results</button>
 
-<script>
-let guesses = [];
+    <script>
+        let guesses = [];
 
-async function submitGuess() {
-const input = document.getElementById('guess-input').value.toUpperCase();
-if (input.length !== 5) {
-alert('Please enter a 5-letter word.');
-return;
-}
+        async function submitGuess() {
+            const input = document.getElementById('guess-input').value.toUpperCase();
+            if (input.length !== 5) {
+                alert('Please enter a 5-letter word.');
+                return;
+            }
 
-const response = await fetch('/guess', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ guess: input })
-});
-const data = await response.json();
+            const response = await fetch('/guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guess: input })
+            });
+            const data = await response.json();
 
-if (data.error) {
-alert(data.error);
-return;
-}
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
 
-guesses.push({ guess: data.guess, result: data.result });
-renderBoard();
-document.getElementById('guess-input').value = '';
+            guesses.push({ guess: data.guess, result: data.result });
+            renderBoard();
+            document.getElementById('guess-input').value = '';
 
-if (data.message) {
-document.getElementById('message').textContent = data.message;
-document.getElementById('share-text').value = data.share_text;
-}
-}
+            if (data.message) {
+                document.getElementById('message').textContent = data.message;
+                document.getElementById('share-text').value = data.share_text;
+            }
+        }
 
-async function toggleHardMode() {
-const response = await fetch('/toggle_hard_mode', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' }
-});
-const data = await response.json();
-document.getElementById('hard-mode-status').textContent = `Hard Mode: ${data.hard_mode ? 'On' : 'Off'}`;
-}
+        async function toggleHardMode() {
+            const response = await fetch('/toggle_hard_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            document.getElementById('hard-mode-status').textContent = `Hard Mode: ${data.hard_mode ? 'On' : 'Off'}`;
+        }
 
-function renderBoard() {
-const board = document.getElementById('game-board');
-board.innerHTML = '';
-guesses.forEach(g => {
-const row = document.createElement('div');
-row.className = 'row';
-for (let i = 0; i < 5; i++) {
-const tile = document.createElement('div');
-tile.className = `tile ${g.result[i]}`;
-tile.textContent = g.guess[i];
-row.appendChild(tile);
-}
-board.appendChild(row);
-});
-}
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            guesses.forEach(g => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let i = 0; i < 5; i++) {
+                    const tile = document.createElement('div');
+                    tile.className = `tile ${g.result[i]}`;
+                    tile.textContent = g.guess[i];
+                    row.appendChild(tile);
+                }
+                board.appendChild(row);
+            });
+        }
 
-function copyShareText() {
-const shareText = document.getElementById('share-text');
-shareText.select();
-document.execCommand('copy');
-alert('Results copied to clipboard!');
-}
+        function copyShareText() {
+            const shareText = document.getElementById('share-text');
+            shareText.select();
+            document.execCommand('copy');
+            alert('Results copied to clipboard!');
+        }
 
-document.getElementById('guess-input').addEventListener('keypress', (e) => {
-if (e.key === 'Enter') submitGuess();
-});
-</script>
+        document.getElementById('guess-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitGuess();
+        });
+    </script>
 </body>
 </html>
