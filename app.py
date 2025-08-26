@@ -57,6 +57,10 @@ def index():
     session['hard_mode'] = False
     return render_template('index.html')
 
+@app.route('/wordlist')
+def wordlist():
+    return render_template('wordlist.html', words=WORDS)
+
 @app.route('/guess', methods=['POST'])
 def guess():
     if session.get('game_over'):
