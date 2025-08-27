@@ -52,10 +52,18 @@ init_db()
 
 @app.route('/')
 def index():
+    today = str(date.today())
+    last_played = session.get('last_played_date')
+    
+    # Check if user has already played today
+    if last_played == today:
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
+    
+    # Initialize new game
     session['guesses'] = []
     session['game_over'] = False
     session['hard_mode'] = False
-    return render_template('index.html')
+    return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
 def wordlist():
@@ -63,6 +71,10 @@ def wordlist():
 
 @app.route('/guess', methods=['POST'])
 def guess():
+    today = str(date.today())
+    if session.get('last_played_date') == today:
+        return jsonify({'error': 'You have already played today. Come back tomorrow!'})
+
     if session.get('game_over'):
         return jsonify({'error': 'Game is over. Start a new game.'})
 
@@ -120,10 +132,12 @@ def guess():
     if guess == target:
         game_over = True
         session['game_over'] = True
+        session['last_played_date'] = today
         message = f'Congratulations! You solved it in {len(session["guesses"])} guesses!'
     elif len(session['guesses']) >= 6:
         game_over = True
         session['game_over'] = True
+        session['last_played_date'] = today
         message = f'Game over! The word was {target}.'
 
     # Generate shareable result
@@ -143,6 +157,8 @@ def guess():
 
 @app.route('/toggle_hard_mode', methods=['POST'])
 def toggle_hard_mode():
+    if session.get('last_played_date') == str(date.today()):
+        return jsonify({'error': 'Cannot change settings. You have already played today.'})
     session['hard_mode'] = not session.get('hard_mode', False)
     session.modified = True
     return jsonify({'hard_mode': session['hard_mode']})
