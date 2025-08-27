@@ -3,29 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wurdle</title>
+    <title>Wordle</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Wurdle</h1>
-    <div id="game-board"></div>
-    <div id="input-area">
-        <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
-        <button onclick="submitGuess()">Submit</button>
-        <button onclick="toggleHardMode()">Toggle Hard Mode</button>
-        <p id="hard-mode-status">Hard Mode: Off</p>
+    <h1>Wordle</h1>
+    {% if game_blocked %}
+        <p id="blocked-message">{{ message }}</p>
         <a href="/wordlist">View Word List</a>
-    </div>
-    <p id="message"></p>
-    <textarea id="share-text" readonly></textarea>
-    <button onclick="copyShareText()">Share Results</button>
+    {% else %}
+        <div id="game-board"></div>
+        <div id="input-area">
+            <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
+            <button onclick="submitGuess()">Submit</button>
+            <button onclick="toggleHardMode()">Toggle Hard Mode</button>
+            <p id="hard-mode-status">Hard Mode: Off</p>
+            <a href="/wordlist">View Word List</a>
+        </div>
+        <p id="message"></p>
+        <textarea id="share-text" readonly></textarea>
+        <button onclick="copyShareText()">Share Results</button>
+    {% endif %}
 
     <script>
         let guesses = [];
 
         async function submitGuess() {
-            const input = document.getElementById('guess-input').value.toUpperCase();
-            if (input.length !== 5) {
+            const input = document.getElementById('guess-input')?.value.toUpperCase();
+            if (!input || input.length !== 5) {
                 alert('Please enter a 5-letter word.');
                 return;
             }
@@ -58,11 +63,16 @@
                 headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
             document.getElementById('hard-mode-status').textContent = `Hard Mode: ${data.hard_mode ? 'On' : 'Off'}`;
         }
 
         function renderBoard() {
             const board = document.getElementById('game-board');
+            if (!board) return;
             board.innerHTML = '';
             guesses.forEach(g => {
                 const row = document.createElement('div');
@@ -79,12 +89,13 @@
 
         function copyShareText() {
             const shareText = document.getElementById('share-text');
+            if (!shareText) return;
             shareText.select();
             document.execCommand('copy');
             alert('Results copied to clipboard!');
         }
 
-        document.getElementById('guess-input').addEventListener('keypress', (e) => {
+        document.getElementById('guess-input')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') submitGuess();
         });
     </script>
