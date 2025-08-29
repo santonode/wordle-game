@@ -141,7 +141,7 @@ def guess():
         message = f'Game over! The word was {target}.'
 
     # Generate shareable result
-    share_text = f"Wordle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
+    share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
     for g in session['guesses']:
         share_text += ''.join({
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
