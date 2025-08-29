@@ -85,11 +85,15 @@ def stats():
     try:
         with sqlite3.connect('wordle.db') as conn:
             c = conn.cursor()
+            # Query for wins and losses per day
             c.execute('''SELECT date(timestamp) as day, 
                          SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
                          SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END) as losses
                          FROM game_logs GROUP BY day ORDER BY day''')
             data = c.fetchall()
+            # Query for total games played
+            c.execute('SELECT COUNT(*) FROM game_logs')
+            total_games = c.fetchone()[0]
         
         if not data:
             return render_template('stats.html', chart=None)
@@ -98,15 +102,17 @@ def stats():
         wins = [row[1] for row in data]
         losses = [row[2] for row in data]
         
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # Create chart with larger figure and smaller x-axis font
+        fig, ax = plt.subplots(figsize=(12, 6))  # Increased from (10, 5)
         ax.bar(days, wins, label='Wins', color='green')
         ax.bar(days, losses, bottom=wins, label='Losses', color='red')
         ax.set_xlabel('Date')
         ax.set_ylabel('Count')
-        ax.set_title('Historical Wins and Losses')
+        ax.set_title(f'Historical Wins and Losses (Total Games: {total_games})')
         ax.legend()
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.xticks(rotation=45)
+        ax.tick_params(axis='x', labelsize=8, rotation=45)  # Smaller font, rotated
+        plt.tight_layout()  # Ensure layout fits
         
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
