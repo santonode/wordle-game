@@ -65,15 +65,18 @@ init_db()
 def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
+    replay_allowed = session.get('replay_allowed', False)
     
-    # Check if user has already played today
-    if last_played == today:
+    # Check if user has already played today and replay is not allowed
+    if last_played == today and not replay_allowed:
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
-    # Initialize new game
+    # Initialize new game or replay
     session['guesses'] = []
     session['game_over'] = False
     session['hard_mode'] = False
+    if replay_allowed:
+        session['replay_allowed'] = False  # Reset replay after use
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
@@ -85,13 +88,11 @@ def stats():
     try:
         with sqlite3.connect('wordle.db') as conn:
             c = conn.cursor()
-            # Query for wins and losses per day
             c.execute('''SELECT date(timestamp) as day, 
                          SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
                          SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END) as losses
                          FROM game_logs GROUP BY day ORDER BY day''')
             data = c.fetchall()
-            # Query for total games played
             c.execute('SELECT COUNT(*) FROM game_logs')
             total_games = c.fetchone()[0]
         
@@ -102,8 +103,7 @@ def stats():
         wins = [row[1] for row in data]
         losses = [row[2] for row in data]
         
-        # Create chart with larger figure and smaller x-axis font
-        fig, ax = plt.subplots(figsize=(12, 6))  # Increased from (10, 5)
+        fig, ax = plt.subplots(figsize=(12, 6))
         ax.bar(days, wins, label='Wins', color='green')
         ax.bar(days, losses, bottom=wins, label='Losses', color='red')
         ax.set_xlabel('Date')
@@ -111,8 +111,8 @@ def stats():
         ax.set_title(f'Historical Wins and Losses (Total Games: {total_games})')
         ax.legend()
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        ax.tick_params(axis='x', labelsize=8, rotation=45)  # Smaller font, rotated
-        plt.tight_layout()  # Ensure layout fits
+        ax.tick_params(axis='x', labelsize=8, rotation=45)
+        plt.tight_layout()
         
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -125,11 +125,17 @@ def stats():
         print(f"Database error in stats: {e}")
         return render_template('stats.html', chart=None)
 
+@app.route('/replay', methods=['POST'])
+def replay():
+    session['replay_allowed'] = True
+    session.modified = True
+    return jsonify({'success': True})
+
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
-    if session.get('last_played_date') == today:
-        return jsonify({'error': 'You have already played today. Come back tomorrow!'})
+    if session.get('last_played_date') == today and not session.get('replay_allowed', False):
+        return jsonify({'error': 'You have already played today. Come back tomorrow or use the Replay button!'})
 
     if session.get('game_over'):
         return jsonify({'error': 'Game is over. Start a new game.'})
@@ -228,7 +234,7 @@ def guess():
 
 @app.route('/toggle_hard_mode', methods=['POST'])
 def toggle_hard_mode():
-    if session.get('last_played_date') == str(date.today()):
+    if session.get('last_played_date') == str(date.today()) and not session.get('replay_allowed', False):
         return jsonify({'error': 'Cannot change settings. You have already played today.'})
     session['hard_mode'] = not session.get('hard_mode', False)
     session.modified = True
