@@ -83,3 +83,9 @@ button:hover, a:hover {
     font-size: 16px;
     text-align: center;
 }
+
+.chart-image {
+    max-width: 80%;
+    margin: 20px auto;
+    display: block;
+}
