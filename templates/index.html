@@ -81,7 +81,7 @@
                 row.className = 'row';
                 for (let i = 0; i < 5; i++) {
                     const tile = document.createElement('div');
-                    tile.className = `tile ${g.result[i]}`;
+                    tile.className = `tile ${g.result[i] === 'green' ? 'teal' : g.result[i] === 'yellow' ? 'yellow' : 'red'}`;
                     tile.textContent = g.guess[i];
                     row.appendChild(tile);
                 }
