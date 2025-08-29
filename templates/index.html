@@ -11,6 +11,7 @@
     {% if game_blocked %}
         <p id="blocked-message">{{ message }}</p>
         <a href="/wordlist">View Word List</a>
+        <a href="/stats">View Stats</a>
     {% else %}
         <div id="game-board"></div>
         <div id="input-area">
@@ -19,6 +20,7 @@
             <button onclick="toggleHardMode()">Toggle Hard Mode</button>
             <p id="hard-mode-status">Hard Mode: Off</p>
             <a href="/wordlist">View Word List</a>
+            <a href="/stats">View Stats</a>
         </div>
         <p id="message"></p>
         <textarea id="share-text" readonly></textarea>
