@@ -24,13 +24,13 @@ body {
     font-size: 24px;
     font-weight: bold;
     text-transform: uppercase;
-    border: 2px solid #ccc;
-    background-color: #fff;
+    border: 2px solid #263238; /* Navy border */
+    background-color: #263238; /* Navy background */
 }
 
-.green { background-color: #6aaa64; color: white; }
-.yellow { background-color: #c9b458; color: white; }
-.gray { background-color: #787c7e; color: white; }
+.teal { background-color: #26A69A; color: white; } /* Correct letters */
+.yellow { background-color: #FFCA28; color: black; } /* Misplaced letters */
+.red { background-color: #EF5350; color: white; } /* Wrong letters */
 
 #input-area {
     margin: 20px 0;
