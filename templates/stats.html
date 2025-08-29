@@ -1,1 +1,19 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wurdle - Stats</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Wurdle - Historical Stats</h1>
+    {% if chart %}
+        <img src="data:image/png;base64,{{ chart }}" alt="Historical Wins and Losses Chart" class="chart-image">
+    {% else %}
+        <p>No data available yet. Play some games to generate stats!</p>
+    {% endif %}
+    <a href="/">Back to Game</a>
+    <a href="/wordlist">View Word List</a>
+</body>
+</html>
