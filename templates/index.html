@@ -62,6 +62,20 @@
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
         }
+        #input-area {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #input-area .input-row {
+            margin-bottom: 10px;
+        }
+        #input-area .link-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between links */
+        }
     </style>
 </head>
 <body>
@@ -77,10 +91,14 @@
         {% else %}
             <div id="game-board"></div>
             <div id="input-area">
-                <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
-                <button onclick="submitGuess()">Submit</button>
-                <a href="/wordlist">View Word List</a>
-                <a href="/stats">View Stats</a>
+                <div class="input-row">
+                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
+                    <button onclick="submitGuess()">Submit</button>
+                </div>
+                <div class="link-row">
+                    <a href="/wordlist">View Word List</a>
+                    <a href="/stats">View Stats</a>
+                </div>
             </div>
             <p id="message"></p>
             <textarea id="share-text" readonly></textarea>
