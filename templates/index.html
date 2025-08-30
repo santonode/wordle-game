@@ -12,7 +12,7 @@
         <p id="blocked-message">{{ message }}</p>
         <a href="/wordlist">View Word List</a>
         <a href="/stats">View Stats</a>
-        <button onclick="requestReplay()">Replay</button>
+        <button id="replay-button" onclick="requestReplay()">Replay</button>
     {% else %}
         <div id="game-board"></div>
         <div id="input-area">
@@ -105,7 +105,16 @@
             });
             const data = await response.json();
             if (data.success) {
-                location.reload(); // Reload the page to start a new game
+                // Enable game UI without reload
+                document.getElementById('blocked-message').style.display = 'none';
+                document.getElementById('replay-button').style.display = 'none';
+                document.getElementById('game-board').style.display = 'block';
+                document.getElementById('input-area').style.display = 'block';
+                document.getElementById('message').style.display = 'block';
+                document.getElementById('share-text').style.display = 'block';
+                guesses = []; // Reset guesses for new game
+                renderBoard();
+                alert('Replay enabled! Start your new game.');
             } else {
                 alert('Unable to replay at this time.');
             }
