@@ -5,27 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wurdle</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000; /* Black border */
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 15px;
+            background: linear-gradient(45deg, #26A69A, #FFCA28); /* Teal to Yellow gradient */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 16px;
+            color: #26A69A; /* Teal */
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000; /* Black border */
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #FFCA28; /* Yellow */
+            text-decoration: none;
+            border-bottom: 1px dashed #FFCA28;
+        }
+        .footer a:hover {
+            color: #EF5350; /* Red */
+        }
+        .content {
+            margin-top: 70px; /* Space for header */
+            margin-bottom: 50px; /* Space for footer */
+            min-height: calc(100vh - 120px); /* Ensure content fills page */
+        }
+    </style>
 </head>
 <body>
-    <h1>Wurdle</h1>
-    {% if game_blocked %}
-        <p id="blocked-message">{{ message }}</p>
-        <a href="/wordlist">View Word List</a>
-        <a href="/stats">View Stats</a>
-    {% else %}
-        <div id="game-board"></div>
-        <div id="input-area">
-            <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
-            <button onclick="submitGuess()">Submit</button>
-            <button onclick="toggleHardMode()">Toggle Hard Mode</button>
-            <p id="hard-mode-status">Hard Mode: Off</p>
+    <div class="header">
+        <h1>Wurdle</h1>
+        <p>Challenge Your Word Skills Daily!</p>
+    </div>
+    <div class="content">
+        <h1>Wurdle</h1>
+        {% if game_blocked %}
+            <p id="blocked-message">{{ message }}</p>
             <a href="/wordlist">View Word List</a>
             <a href="/stats">View Stats</a>
-        </div>
-        <p id="message"></p>
-        <textarea id="share-text" readonly></textarea>
-        <button onclick="copyShareText()">Share Results</button>
-    {% endif %}
+        {% else %}
+            <div id="game-board"></div>
+            <div id="input-area">
+                <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
+                <button onclick="submitGuess()">Submit</button>
+                <button onclick="toggleHardMode()">Toggle Hard Mode</button>
+                <p id="hard-mode-status">Hard Mode: Off</p>
+                <a href="/wordlist">View Word List</a>
+                <a href="/stats">View Stats</a>
+            </div>
+            <p id="message"></p>
+            <textarea id="share-text" readonly></textarea>
+            <button onclick="copyShareText()">Share Results</button>
+        {% endif %}
+    </div>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends! <a href="/promote">Learn More</a></p>
+    </div>
 
     <script>
         let guesses = [];
