@@ -18,6 +18,8 @@
             font-family: Arial, sans-serif;
             font-weight: bold;
             border-bottom: 2px solid #000000; /* Black border */
+            height: 45px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
         }
         .header h1 {
             margin: 0;
@@ -47,15 +49,18 @@
             text-align: center;
             z-index: 1000;
             border-top: 2px solid #000000; /* Black border */
+            height: 35px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
         }
         .footer p {
             margin: 3px 0;
             font-size: 12px; /* Reduced font size */
         }
         .content {
-            margin-top: 50px; /* Reduced to match header height */
+            margin-top: 50px; /* Increased to ensure clearance */
             margin-bottom: 40px; /* Adjusted for footer */
-            min-height: calc(100vh - 90px); /* Adjusted for reduced header/footer height */
+            min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
+            padding-top: 5px; /* Additional padding to push content down */
         }
     </style>
 </head>
