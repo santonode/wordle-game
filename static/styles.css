@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     background-color: #f0f0f0;
-    border: 2px solid #000000; /* Black border added */
+    border: 2px solid #000000; /* Black border around body remains */
 }
 
 #game-board {
@@ -25,8 +25,8 @@ body {
     font-size: 24px;
     font-weight: bold;
     text-transform: uppercase;
-    border: 2px solid #263238; /* Navy border */
     background-color: #263238; /* Navy background */
+    /* Removed border: 2px solid #000000; */
 }
 
 .teal { background-color: #26A69A; color: white; } /* Correct letters */
