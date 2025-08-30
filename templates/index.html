@@ -52,14 +52,6 @@
             margin: 5px 0;
             font-size: 14px;
         }
-        .footer a {
-            color: #FFCA28; /* Yellow */
-            text-decoration: none;
-            border-bottom: 1px dashed #FFCA28;
-        }
-        .footer a:hover {
-            color: #EF5350; /* Red */
-        }
         .content {
             margin-top: 70px; /* Space for header */
             margin-bottom: 50px; /* Space for footer */
@@ -73,7 +65,6 @@
         <p>Challenge Your Word Skills Daily!</p>
     </div>
     <div class="content">
-        <h1>Wurdle</h1>
         {% if game_blocked %}
             <p id="blocked-message">{{ message }}</p>
             <a href="/wordlist">View Word List</a>
@@ -95,7 +86,7 @@
     </div>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
-        <p>Play Now and Share with Friends! <a href="/promote">Learn More</a></p>
+        <p>Play Now and Share with Friends!</p>
     </div>
 
     <script>
