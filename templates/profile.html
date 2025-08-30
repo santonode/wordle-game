@@ -1,1 +1,86 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wurdle - Profile</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 5px 0; /* Reduced padding */
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000; /* Black border */
+            height: 45px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px; /* Reduced font size */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 10px; /* Reduced padding */
+            background: linear-gradient(45deg, #26A69A, #FFCA28); /* Teal to Yellow gradient */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header .gear-icon {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 24px;
+            text-decoration: none;
+            color: white;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 5px 0; /* Reduced padding */
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000; /* Black border */
+            height: 35px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
+        }
+        .footer p {
+            margin: 3px 0;
+            font-size: 12px; /* Reduced font size */
+        }
+        .content {
+            margin-top: 50px; /* Increased to ensure clearance */
+            margin-bottom: 40px; /* Adjusted for footer */
+            min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
+            padding-top: 5px; /* Additional padding to push content down */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wurdle</h1>
+        <a href="/profile" class="gear-icon">⚙️</a>
+    </div>
+    <div class="content">
+        <!-- Blank for now as requested -->
+    </div>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends!</p>
+    </div>
+</body>
+</html>
