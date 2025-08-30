@@ -46,9 +46,12 @@
             position: absolute;
             top: 5px;
             right: 10px;
-            font-size: 24px;
+            font-size: 16px; /* Reduced to ~50% of 24px */
             text-decoration: none;
             color: white;
+            background-color: #000000; /* Black background */
+            padding: 2px 4px; /* Padding for background */
+            border-radius: 4px; /* Rounded corners */
         }
         .footer {
             position: fixed;
@@ -108,84 +111,4 @@
                     <button onclick="submitGuess()">Submit</button>
                 </div>
                 <div class="link-row">
-                    <a href="/wordlist">View Word List</a>
-                    <a href="/stats">View Stats</a>
-                </div>
-            </div>
-            <p id="message"></p>
-            <textarea id="share-text" readonly></textarea>
-            <button onclick="copyShareText()">Share Results</button>
-        {% endif %}
-    </div>
-    <div class="footer">
-        <p>Made with ❤️ by Wurdle Team</p>
-        <p>Play Now and Share with Friends!</p>
-    </div>
-
-    <script>
-        let guesses = [];
-
-        async function submitGuess() {
-            const input = document.getElementById('guess-input')?.value.toUpperCase();
-            if (!input || input.length !== 5) {
-                alert('Please enter a 5-letter word.');
-                return;
-            }
-
-            const response = await fetch('/guess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess: input })
-            });
-            const data = await response.json();
-
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            guesses.push({ guess: data.guess, result: data.result });
-            renderBoard();
-            document.getElementById('guess-input').value = '';
-
-            if (data.message) {
-                document.getElementById('message').textContent = data.message;
-                document.getElementById('share-text').value = data.share_text;
-            }
-        }
-
-        async function toggleHardMode() {
-            // This function is no longer used on this page but kept for script integrity
-        }
-
-        function renderBoard() {
-            const board = document.getElementById('game-board');
-            if (!board) return;
-            board.innerHTML = '';
-            guesses.forEach(g => {
-                const row = document.createElement('div');
-                row.className = 'row';
-                for (let i = 0; i < 5; i++) {
-                    const tile = document.createElement('div');
-                    tile.className = `tile ${g.result[i] === 'green' ? 'teal' : g.result[i] === 'yellow' ? 'yellow' : 'red'}`;
-                    tile.textContent = g.guess[i];
-                    row.appendChild(tile);
-                }
-                board.appendChild(row);
-            });
-        }
-
-        function copyShareText() {
-            const shareText = document.getElementById('share-text');
-            if (!shareText) return;
-            shareText.select();
-            document.execCommand('copy');
-            alert('Results copied to clipboard!');
-        }
-
-        document.getElementById('guess-input')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitGuess();
-        });
-    </script>
-</body>
-</html>
+                    <a href="/wordlist">View Word List</
