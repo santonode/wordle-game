@@ -73,7 +73,7 @@ def index():
     # Initialize new game
     session['guesses'] = []
     session['game_over'] = False
-    session['hard_mode'] = False
+    session['hard_mode'] = session.get('hard_mode', False)  # Retain hard mode from session
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
