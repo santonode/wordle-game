@@ -61,6 +61,12 @@ def get_daily_word():
 # Initialize database on app startup
 init_db()
 
+# Global error handler
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app.logger.error(f"Unhandled exception: {str(e)}")
+    return "An error occurred. Please try again later.", 500
+
 @app.route('/')
 def index():
     today = str(date.today())
@@ -70,10 +76,13 @@ def index():
     if last_played == today:
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
-    # Initialize new game
-    session['guesses'] = []
-    session['game_over'] = False
-    session['hard_mode'] = session.get('hard_mode', False)  # Retain hard mode from session
+    # Initialize session safely
+    if 'guesses' not in session:
+        session['guesses'] = []
+    if 'game_over' not in session:
+        session['game_over'] = False
+    if 'hard_mode' not in session:
+        session['hard_mode'] = session.get('hard_mode', False)  # Retain from session if exists
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
