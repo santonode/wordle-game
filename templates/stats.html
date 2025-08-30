@@ -76,6 +76,10 @@
         {% else %}
             <p>No data available yet. Play some games to generate stats!</p>
         {% endif %}
+        <div id="hard-mode-area">
+            <button onclick="toggleHardMode()">Toggle Hard Mode</button>
+            <p id="hard-mode-status">Hard Mode: Off</p>
+        </div>
         <a href="/">Back to Game</a>
         <a href="/wordlist">View Word List</a>
     </div>
@@ -83,5 +87,20 @@
         <p>Made with ❤️ by Wurdle Team</p>
         <p>Play Now and Share with Friends!</p>
     </div>
+
+    <script>
+        async function toggleHardMode() {
+            const response = await fetch('/toggle_hard_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            document.getElementById('hard-mode-status').textContent = `Hard Mode: ${data.hard_mode ? 'On' : 'Off'}`;
+        }
+    </script>
 </body>
 </html>
