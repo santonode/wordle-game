@@ -66,10 +66,11 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     replay_allowed = session.get('replay_allowed', False)
+    print(f"Index: last_played={last_played}, today={today}, replay_allowed={replay_allowed}")  # Debug
     
     # Check if user has already played today and replay is not allowed
     if last_played == today and not replay_allowed:
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow or use Replay!")
     
     # Initialize new game or replay
     session['guesses'] = []
@@ -127,15 +128,18 @@ def stats():
 
 @app.route('/replay', methods=['POST'])
 def replay():
+    print("Replay requested")  # Debug
     session['replay_allowed'] = True
     session.modified = True
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'message': 'Replay enabled, refresh to start new game'})
 
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
-    if session.get('last_played_date') == today and not session.get('replay_allowed', False):
-        return jsonify({'error': 'You have already played today. Come back tomorrow or use the Replay button!'})
+    replay_allowed = session.get('replay_allowed', False)
+    print(f"Guess: last_played={session.get('last_played_date')}, today={today}, replay_allowed={replay_allowed}")  # Debug
+    if session.get('last_played_date') == today and not replay_allowed:
+        return jsonify({'error': 'You have already played today. Use the Replay button!'})
 
     if session.get('game_over'):
         return jsonify({'error': 'Game is over. Start a new game.'})
