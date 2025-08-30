@@ -12,7 +12,6 @@
         <p id="blocked-message">{{ message }}</p>
         <a href="/wordlist">View Word List</a>
         <a href="/stats">View Stats</a>
-        <button id="replay-button" onclick="requestReplay()">Replay</button>
     {% else %}
         <div id="game-board"></div>
         <div id="input-area">
@@ -96,28 +95,6 @@
             shareText.select();
             document.execCommand('copy');
             alert('Results copied to clipboard!');
-        }
-
-        async function requestReplay() {
-            const response = await fetch('/replay', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await response.json();
-            if (data.success) {
-                // Enable game UI without reload
-                document.getElementById('blocked-message').style.display = 'none';
-                document.getElementById('replay-button').style.display = 'none';
-                document.getElementById('game-board').style.display = 'block';
-                document.getElementById('input-area').style.display = 'block';
-                document.getElementById('message').style.display = 'block';
-                document.getElementById('share-text').style.display = 'block';
-                guesses = []; // Reset guesses for new game
-                renderBoard();
-                alert('Replay enabled! Start your new game.');
-            } else {
-                alert('Unable to replay at this time.');
-            }
         }
 
         document.getElementById('guess-input')?.addEventListener('keypress', (e) => {
