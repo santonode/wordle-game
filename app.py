@@ -122,6 +122,10 @@ def stats():
         print(f"Database error in stats: {e}")
         return render_template('stats.html', chart=None)
 
+@app.route('/profile')
+def profile():
+    return render_template('profile.html')
+
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
