@@ -86,19 +86,19 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     
-    # Only block if the user has completed a game today (6 guesses or win)
+    # Block only if the game was completed today
     if last_played == today and session.get('game_over'):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
-    # Preserve existing session state
+    # Initialize session only if not present, preserving existing state
     if 'guesses' not in session:
         session['guesses'] = []
     if 'game_over' not in session:
         session['game_over'] = False
     if 'hard_mode' not in session:
         session['hard_mode'] = session.get('hard_mode', False)
-    # Update last_played_date only if it's a new game or game is completed
-    if not last_played or (last_played != today and not session.get('guesses')):
+    # Set last_played_date only if it's a new game or game is completed
+    if not last_played or (last_played != today and not session.get('guesses')) or session.get('game_over'):
         session['last_played_date'] = today
 
     return render_template('index.html', game_blocked=False)
