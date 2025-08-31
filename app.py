@@ -18,8 +18,12 @@ DB_PATH = "/opt/render/project/src/wordle.db"
 # Initialize SQLite database
 def init_db():
     try:
-        # Ensure the directory exists
+        # Ensure the directory exists and is writable
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        # Check if the file can be created/touched
+        if not os.path.exists(DB_PATH):
+            open(DB_PATH, 'a').close()  # Create an empty file if it doesn't exist
+            os.chmod(DB_PATH, 0o664)  # Set permissive mode for testing
         with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
             c.execute('''CREATE TABLE IF NOT EXISTS daily_word (
@@ -40,6 +44,9 @@ def init_db():
             conn.commit()
     except sqlite3.Error as e:
         print(f"Database initialization error: {e}")
+        raise
+    except OSError as e:
+        print(f"File system error during database initialization: {e}")
         raise
 
 # Load word list
