@@ -7,8 +7,7 @@ import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import hashlib
-import psycopg2
-from psycopg2.extras import execute_values
+import psycopg  # Updated to psycopg3
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -21,7 +20,7 @@ if not DATABASE_URL:
 # Initialize Postgres database
 def init_db():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
@@ -46,7 +45,7 @@ def init_db():
                 ''')
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         print(f"Database initialization error: {e}")
         raise
     except Exception as e:
@@ -66,7 +65,7 @@ def get_daily_word():
     today = str(date.today())
     print(f"Attempting to connect to database with URL: {DATABASE_URL}")  # Debug
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT word FROM daily_word WHERE date = %s', (today,))
                 result = cur.fetchone()
@@ -79,11 +78,11 @@ def get_daily_word():
                     conn.commit()
                     print(f"Inserted new word for {today}: {word}")
                     return word
-    except psycopg2.Error as e:
-        print(f"Database error in get_daily_word: {e.__class__.__name__}: {e}")
+    except psycopg.Error as e:
+        print(f"Database error in get_daily_word: {e}")
         return random.choice(WORDS)  # Fallback to random word
     except Exception as e:
-        print(f"Unexpected error in get_daily_word: {e.__class__.__name__}: {e}")
+        print(f"Unexpected error in get_daily_word: {e}")
         return random.choice(WORDS)  # Fallback to random word
 
 # Generate username based on IP and session data
@@ -130,7 +129,7 @@ def wordlist():
 @app.route('/stats')
 def stats():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('''
                     SELECT date(timestamp) as day, 
@@ -170,11 +169,11 @@ def stats():
         table_data = data
         
         return render_template('stats.html', chart=chart, table_data=table_data)
-    except psycopg2.Error as e:
-        print(f"Database error in stats: {e.__class__.__name__}: {e}")
+    except psycopg.Error as e:
+        print(f"Database error in stats: {e}")
         return render_template('stats.html', chart=None, table_data=None)
     except Exception as e:
-        print(f"Unexpected error in stats: {e.__class__.__name__}: {e}")
+        print(f"Unexpected error in stats: {e}")
         return render_template('stats.html', chart=None, table_data=None)
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -182,7 +181,7 @@ def profile():
     ip_address = request.remote_addr
     if 'username' not in session or not session.get('username'):
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT username FROM users WHERE ip_address = %s', (ip_address,))
                     result = cur.fetchone()
@@ -193,8 +192,8 @@ def profile():
                         session['username'] = username
                         cur.execute('INSERT INTO users (ip_address, username) VALUES (%s, %s)', (ip_address, username))
                         conn.commit()
-        except psycopg2.Error as e:
-            print(f"Database error in profile: {e.__class__.__name__}: {e}")
+        except psycopg.Error as e:
+            print(f"Database error in profile: {e}")
             session['username'] = generate_username(ip_address)  # Fallback
 
     if request.method == 'POST':
@@ -209,14 +208,14 @@ def profile():
         new_username = request.form.get('username', '').strip()
         if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('UPDATE users SET username = %s WHERE ip_address = %s', (new_username, ip_address))
                         conn.commit()
                 session['username'] = new_username
                 return render_template('profile.html', username=new_username, message="Username updated successfully!")
-            except psycopg2.Error as e:
-                print(f"Database error updating username: {e.__class__.__name__}: {e}")
+            except psycopg.Error as e:
+                print(f"Database error updating username: {e}")
                 return render_template('profile.html', username=session['username'], message="Error updating username.")
         else:
             return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.")
@@ -303,15 +302,15 @@ def guess():
     if game_over:
         # Log the game session
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('''
                         INSERT INTO game_logs (timestamp, ip_address, win, guesses)
                         VALUES (%s, %s, %s, %s)
                     ''', (datetime.now(), request.remote_addr, win, len(session['guesses'])))
                     conn.commit()
-        except psycopg2.Error as e:
-            print(f"Database logging error: {e.__class__.__name__}: {e}")
+        except psycopg.Error as e:
+            print(f"Database logging error: {e}")
 
     # Generate shareable result
     share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
