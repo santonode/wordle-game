@@ -77,6 +77,35 @@
             color: #26A69A;
             margin-top: 20px;
         }
+        .customize-form {
+            margin-top: 20px;
+        }
+        .customize-form input {
+            padding: 5px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .customize-form button {
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+        .message {
+            margin-top: 10px;
+            color: #FFCA28;
+        }
+        .back-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #26A69A;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            background-color: #1e7d71;
+        }
     </style>
 </head>
 <body>
@@ -86,6 +115,14 @@
     </div>
     <div class="content">
         <div class="username">Username: {{ username }}</div>
+        <form class="customize-form" method="POST">
+            <input type="text" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required>
+            <button type="submit">Update Username</button>
+        </form>
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
+        <a href="/" class="back-button">Back to Game</a>
     </div>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
