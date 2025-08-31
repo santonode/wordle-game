@@ -90,6 +90,19 @@
             padding: 5px 10px;
             font-size: 16px;
         }
+        .clear-session-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+            background-color: #FF4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .clear-session-btn:hover {
+            background-color: #CC0000;
+        }
         .message {
             margin-top: 10px;
             color: #FFCA28;
@@ -124,6 +137,9 @@
         <form class="customize-form" method="POST">
             <input type="text" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required>
             <button type="submit">Update Username</button>
+        </form>
+        <form method="POST">
+            <button type="submit" name="clear_session" class="clear-session-btn">Clear Session</button>
         </form>
         {% if message %}
             <div class="message">{{ message }}</div>
