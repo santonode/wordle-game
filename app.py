@@ -7,6 +7,7 @@ import io
 import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -26,6 +27,10 @@ def init_db():
                 ip_address TEXT,
                 win INTEGER,
                 guesses INTEGER
+            )''')
+            c.execute('''CREATE TABLE IF NOT EXISTS users (
+                ip_address TEXT PRIMARY KEY,
+                username TEXT NOT NULL
             )''')
             conn.commit()
     except sqlite3.Error as e:
@@ -58,6 +63,15 @@ def get_daily_word():
         print(f"Database error in get_daily_word: {e}")
         return random.choice(WORDS)  # Fallback to random word
 
+# Generate username based on IP and session data
+def generate_username(ip_address):
+    seed = f"{ip_address}{datetime.now().microsecond}{random.randint(1000, 9999)}"
+    hash_object = hashlib.md5(seed.encode())
+    hash_hex = hash_object.hexdigest()[:8]  # Take first 8 characters for brevity
+    # Convert to alphanumeric by mapping to base36 and filtering
+    username = ''.join(c for c in hash_hex if c.isalnum()).upper()[:12]
+    return username
+
 # Initialize database on app startup
 init_db()
 
@@ -82,7 +96,7 @@ def index():
     if 'game_over' not in session:
         session['game_over'] = False
     if 'hard_mode' not in session:
-        session['hard_mode'] = session.get('hard_mode', False)  # Retain from session if exists
+        session['hard_mode'] = session.get('hard_mode', False)
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
@@ -133,7 +147,24 @@ def stats():
 
 @app.route('/profile')
 def profile():
-    return render_template('profile.html')
+    ip_address = request.remote_addr
+    if 'username' not in session or not session.get('username'):
+        try:
+            with sqlite3.connect('wordle.db') as conn:
+                c = conn.cursor()
+                c.execute('SELECT username FROM users WHERE ip_address = ?', (ip_address,))
+                result = c.fetchone()
+                if result:
+                    session['username'] = result[0]
+                else:
+                    username = generate_username(ip_address)
+                    session['username'] = username
+                    c.execute('INSERT INTO users (ip_address, username) VALUES (?, ?)', (ip_address, username))
+                    conn.commit()
+        except sqlite3.Error as e:
+            print(f"Database error in profile: {e}")
+            session['username'] = generate_username(ip_address)  # Fallback
+    return render_template('profile.html', username=session['username'])
 
 @app.route('/guess', methods=['POST'])
 def guess():
