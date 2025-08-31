@@ -71,6 +71,7 @@
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
             text-align: center;
+            padding-bottom: 60px; /* Added space for button and future content */
         }
         .username {
             font-size: 24px;
@@ -94,7 +95,10 @@
             color: #FFCA28;
         }
         .back-button {
-            margin-top: 20px;
+            position: absolute;
+            bottom: 60px; /* Position above footer with space */
+            left: 50%;
+            transform: translateX(-50%);
             padding: 10px 20px;
             font-size: 16px;
             background-color: #26A69A;
@@ -102,6 +106,8 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
         }
         .back-button:hover {
             background-color: #1e7d71;
@@ -122,8 +128,8 @@
         {% if message %}
             <div class="message">{{ message }}</div>
         {% endif %}
-        <a href="/" class="back-button">Back to Game</a>
     </div>
+    <a href="/" class="back-button">Back to Game</a>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
         <p>Play Now and Share with Friends!</p>
