@@ -70,6 +70,12 @@
             margin-bottom: 40px; /* Adjusted for footer */
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
+            text-align: center;
+        }
+        .username {
+            font-size: 24px;
+            color: #26A69A;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -79,7 +85,7 @@
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
-        <!-- Blank for now as requested -->
+        <div class="username">Username: {{ username }}</div>
     </div>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
