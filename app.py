@@ -145,7 +145,7 @@ def stats():
         print(f"Database error in stats: {e}")
         return render_template('stats.html', chart=None)
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     ip_address = request.remote_addr
     if 'username' not in session or not session.get('username'):
@@ -164,6 +164,23 @@ def profile():
         except sqlite3.Error as e:
             print(f"Database error in profile: {e}")
             session['username'] = generate_username(ip_address)  # Fallback
+
+    if request.method == 'POST':
+        new_username = request.form.get('username', '').strip()
+        if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+            try:
+                with sqlite3.connect('wordle.db') as conn:
+                    c = conn.cursor()
+                    c.execute('UPDATE users SET username = ? WHERE ip_address = ?', (new_username, ip_address))
+                    conn.commit()
+                session['username'] = new_username
+                return render_template('profile.html', username=new_username, message="Username updated successfully!")
+            except sqlite3.Error as e:
+                print(f"Database error updating username: {e}")
+                return render_template('profile.html', username=session['username'], message="Error updating username.")
+        else:
+            return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.")
+
     return render_template('profile.html', username=session['username'])
 
 @app.route('/guess', methods=['POST'])
