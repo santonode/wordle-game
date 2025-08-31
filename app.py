@@ -86,21 +86,18 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     
+    # Clear session if no guesses or new day
+    if not session.get('guesses') or (last_played and last_played != today):
+        session.clear()
+        session['guesses'] = []
+        session['game_over'] = False
+        session['hard_mode'] = False
+        session['last_played_date'] = today if not last_played else None
+
     # Block only if the game was completed today
-    if last_played == today and session.get('game_over', False):
+    if session.get('last_played_date') == today and session.get('game_over', False):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
-    # Initialize session only if not present, preserving existing state
-    if 'guesses' not in session:
-        session['guesses'] = []
-    if 'game_over' not in session:
-        session['game_over'] = False
-    if 'hard_mode' not in session:
-        session['hard_mode'] = session.get('hard_mode', False)
-    # Set last_played_date only if game is completed or new day with no guesses
-    if session.get('game_over') or (not last_played and not session.get('guesses')):
-        session['last_played_date'] = today
-
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
@@ -191,7 +188,7 @@ def profile():
 def guess():
     today = str(date.today())
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
-    if session.get('last_played_date') == today:
+    if session.get('last_played_date') == today and session.get('game_over', False):
         return jsonify({'error': 'You have already played today. Come back tomorrow!'})
 
     if session.get('game_over'):
