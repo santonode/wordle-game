@@ -87,7 +87,7 @@ def index():
     last_played = session.get('last_played_date')
     
     # Block only if the game was completed today
-    if last_played == today and session.get('game_over'):
+    if last_played == today and session.get('game_over', False):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
     # Initialize session only if not present, preserving existing state
@@ -97,8 +97,8 @@ def index():
         session['game_over'] = False
     if 'hard_mode' not in session:
         session['hard_mode'] = session.get('hard_mode', False)
-    # Set last_played_date only if it's a new game or game is completed
-    if not last_played or (last_played != today and not session.get('guesses')) or session.get('game_over'):
+    # Set last_played_date only if game is completed or new day with no guesses
+    if session.get('game_over') or (not last_played and not session.get('guesses')):
         session['last_played_date'] = today
 
     return render_template('index.html', game_blocked=False)
@@ -190,6 +190,7 @@ def profile():
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
+    print(f"Debug - Guess route called, session: {session}")  # Add debugging
     if session.get('last_played_date') == today:
         return jsonify({'error': 'You have already played today. Come back tomorrow!'})
 
@@ -197,10 +198,12 @@ def guess():
         return jsonify({'error': 'Game is over. Start a new game.'})
 
     guess = request.json.get('guess', '').upper()
+    print(f"Debug - Received guess: {guess}")  # Add debugging
     hard_mode = session.get('hard_mode', False)
     target = get_daily_word()
 
     if len(guess) != 5 or guess not in WORDS:
+        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in WORDS}")  # Add debugging
         return jsonify({'error': 'Invalid word. Must be a 5-letter word from the list.'})
 
     # Hard Mode: Check if guess uses all known green/yellow letters
@@ -280,6 +283,7 @@ def guess():
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
         }[color] for color in g['result']) + '\n'
 
+    print(f"Debug - Guess result: {result}, game_over: {game_over}, message: {message}")  # Add debugging
     return jsonify({
         'guess': guess,
         'result': result,
