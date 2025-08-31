@@ -118,13 +118,13 @@ def stats():
             total_games = c.fetchone()[0]
         
         if not data:
-            return render_template('stats.html', chart=None)
+            return render_template('stats.html', chart=None, table_data=None)
         
         days = [row[0] for row in data]
         wins = [row[1] for row in data]
         losses = [row[2] for row in data]
         
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(9, 6))  # Set width to ~900px (9 inches at 100dpi)
         ax.bar(days, wins, label='Wins', color='green')
         ax.bar(days, losses, bottom=wins, label='Losses', color='red')
         ax.set_xlabel('Date')
@@ -136,15 +136,18 @@ def stats():
         plt.tight_layout()
         
         buf = io.BytesIO()
-        plt.savefig(buf, format='png')
+        plt.savefig(buf, format='png', dpi=100)  # Ensure 900px width with dpi=100
         buf.seek(0)
         chart = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close(fig)
         
-        return render_template('stats.html', chart=chart)
+        # Prepare table data
+        table_data = data
+        
+        return render_template('stats.html', chart=chart, table_data=table_data)
     except sqlite3.Error as e:
         print(f"Database error in stats: {e}")
-        return render_template('stats.html', chart=None)
+        return render_template('stats.html', chart=None, table_data=None)
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
