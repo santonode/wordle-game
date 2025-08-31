@@ -168,8 +168,12 @@ def profile():
 
     if request.method == 'POST':
         if 'clear_session' in request.form:
+            current_username = session.get('username')
             session.clear()
-            session['username'] = generate_username(ip_address)
+            session['username'] = current_username
+            session['guesses'] = []
+            session['game_over'] = False
+            session['hard_mode'] = False
             return render_template('profile.html', username=session['username'], message="Session data cleared. Please return to the game.")
         new_username = request.form.get('username', '').strip()
         if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
