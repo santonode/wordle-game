@@ -1,52 +1,56 @@
 from flask import Flask, render_template, request, jsonify, session
 import random
 from datetime import date, datetime
-import sqlite3
 import os
 import io
 import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import hashlib
+import psycopg2
+from psycopg2.extras import execute_values
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# Define the database path
-DB_PATH = "/opt/render/project/src/wordle.db"
+# Get database URL from environment, no fallback to avoid local SQLite confusion
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
-# Initialize SQLite database
+# Initialize Postgres database
 def init_db():
     try:
-        # Ensure the directory exists and is writable
-        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-        # Check if the file can be created/touched
-        if not os.path.exists(DB_PATH):
-            open(DB_PATH, 'a').close()  # Create an empty file if it doesn't exist
-            os.chmod(DB_PATH, 0o664)  # Set permissive mode for testing
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('''CREATE TABLE IF NOT EXISTS daily_word (
-                date TEXT PRIMARY KEY,
-                word TEXT NOT NULL
-            )''')
-            c.execute('''CREATE TABLE IF NOT EXISTS game_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME,
-                ip_address TEXT,
-                win INTEGER,
-                guesses INTEGER
-            )''')
-            c.execute('''CREATE TABLE IF NOT EXISTS users (
-                ip_address TEXT PRIMARY KEY,
-                username TEXT NOT NULL
-            )''')
-            conn.commit()
-    except sqlite3.Error as e:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS daily_word (
+                        date TEXT PRIMARY KEY,
+                        word TEXT NOT NULL
+                    )
+                ''')
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS game_logs (
+                        id SERIAL PRIMARY KEY,
+                        timestamp TIMESTAMP,
+                        ip_address TEXT,
+                        win INTEGER,
+                        guesses INTEGER
+                    )
+                ''')
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS users (
+                        ip_address TEXT PRIMARY KEY,
+                        username TEXT NOT NULL
+                    )
+                ''')
+                conn.commit()
+        print(f"Database initialized successfully with URL: {DATABASE_URL}")
+    except psycopg2.Error as e:
         print(f"Database initialization error: {e}")
         raise
-    except OSError as e:
-        print(f"File system error during database initialization: {e}")
+    except Exception as e:
+        print(f"Unexpected error during initialization: {e}")
         raise
 
 # Load word list
@@ -60,20 +64,26 @@ except FileNotFoundError:
 # Get or set daily word
 def get_daily_word():
     today = str(date.today())
+    print(f"Attempting to connect to database with URL: {DATABASE_URL}")  # Debug
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('SELECT word FROM daily_word WHERE date = ?', (today,))
-            result = c.fetchone()
-            if result:
-                return result[0]
-            else:
-                word = random.choice(WORDS)
-                c.execute('INSERT INTO daily_word (date, word) VALUES (?, ?)', (today, word))
-                conn.commit()
-                return word
-    except sqlite3.Error as e:
-        print(f"Database error in get_daily_word: {e}")
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT word FROM daily_word WHERE date = %s', (today,))
+                result = cur.fetchone()
+                if result:
+                    print(f"Found word for {today}: {result[0]}")
+                    return result[0]
+                else:
+                    word = random.choice(WORDS)
+                    cur.execute('INSERT INTO daily_word (date, word) VALUES (%s, %s)', (today, word))
+                    conn.commit()
+                    print(f"Inserted new word for {today}: {word}")
+                    return word
+    except psycopg2.Error as e:
+        print(f"Database error in get_daily_word: {e.__class__.__name__}: {e}")
+        return random.choice(WORDS)  # Fallback to random word
+    except Exception as e:
+        print(f"Unexpected error in get_daily_word: {e.__class__.__name__}: {e}")
         return random.choice(WORDS)  # Fallback to random word
 
 # Generate username based on IP and session data
@@ -120,15 +130,17 @@ def wordlist():
 @app.route('/stats')
 def stats():
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('''SELECT date(timestamp) as day, 
-                         SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
-                         SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END) as losses
-                         FROM game_logs GROUP BY day ORDER BY day''')
-            data = c.fetchall()
-            c.execute('SELECT COUNT(*) FROM game_logs')
-            total_games = c.fetchone()[0]
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    SELECT date(timestamp) as day, 
+                           SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
+                           SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END) as losses
+                    FROM game_logs GROUP BY day ORDER BY day
+                ''')
+                data = cur.fetchall()
+                cur.execute('SELECT COUNT(*) FROM game_logs')
+                total_games = cur.fetchone()[0]
         
         if not data:
             return render_template('stats.html', chart=None, table_data=None)
@@ -158,8 +170,11 @@ def stats():
         table_data = data
         
         return render_template('stats.html', chart=chart, table_data=table_data)
-    except sqlite3.Error as e:
-        print(f"Database error in stats: {e}")
+    except psycopg2.Error as e:
+        print(f"Database error in stats: {e.__class__.__name__}: {e}")
+        return render_template('stats.html', chart=None, table_data=None)
+    except Exception as e:
+        print(f"Unexpected error in stats: {e.__class__.__name__}: {e}")
         return render_template('stats.html', chart=None, table_data=None)
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -167,19 +182,19 @@ def profile():
     ip_address = request.remote_addr
     if 'username' not in session or not session.get('username'):
         try:
-            with sqlite3.connect(DB_PATH) as conn:
-                c = conn.cursor()
-                c.execute('SELECT username FROM users WHERE ip_address = ?', (ip_address,))
-                result = c.fetchone()
-                if result:
-                    session['username'] = result[0]
-                else:
-                    username = generate_username(ip_address)
-                    session['username'] = username
-                    c.execute('INSERT INTO users (ip_address, username) VALUES (?, ?)', (ip_address, username))
-                    conn.commit()
-        except sqlite3.Error as e:
-            print(f"Database error in profile: {e}")
+            with psycopg2.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('SELECT username FROM users WHERE ip_address = %s', (ip_address,))
+                    result = cur.fetchone()
+                    if result:
+                        session['username'] = result[0]
+                    else:
+                        username = generate_username(ip_address)
+                        session['username'] = username
+                        cur.execute('INSERT INTO users (ip_address, username) VALUES (%s, %s)', (ip_address, username))
+                        conn.commit()
+        except psycopg2.Error as e:
+            print(f"Database error in profile: {e.__class__.__name__}: {e}")
             session['username'] = generate_username(ip_address)  # Fallback
 
     if request.method == 'POST':
@@ -194,14 +209,14 @@ def profile():
         new_username = request.form.get('username', '').strip()
         if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
             try:
-                with sqlite3.connect(DB_PATH) as conn:
-                    c = conn.cursor()
-                    c.execute('UPDATE users SET username = ? WHERE ip_address = ?', (new_username, ip_address))
-                    conn.commit()
+                with psycopg2.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('UPDATE users SET username = %s WHERE ip_address = %s', (new_username, ip_address))
+                        conn.commit()
                 session['username'] = new_username
                 return render_template('profile.html', username=new_username, message="Username updated successfully!")
-            except sqlite3.Error as e:
-                print(f"Database error updating username: {e}")
+            except psycopg2.Error as e:
+                print(f"Database error updating username: {e.__class__.__name__}: {e}")
                 return render_template('profile.html', username=session['username'], message="Error updating username.")
         else:
             return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.")
@@ -288,14 +303,15 @@ def guess():
     if game_over:
         # Log the game session
         try:
-            with sqlite3.connect(DB_PATH) as conn:
-                c = conn.cursor()
-                c.execute('''INSERT INTO game_logs (timestamp, ip_address, win, guesses)
-                             VALUES (?, ?, ?, ?)''', 
-                          (datetime.now(), request.remote_addr, win, len(session['guesses'])))
-                conn.commit()
-        except sqlite3.Error as e:
-            print(f"Database logging error: {e}")
+            with psycopg2.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('''
+                        INSERT INTO game_logs (timestamp, ip_address, win, guesses)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (datetime.now(), request.remote_addr, win, len(session['guesses'])))
+                    conn.commit()
+        except psycopg2.Error as e:
+            print(f"Database logging error: {e.__class__.__name__}: {e}")
 
     # Generate shareable result
     share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
