@@ -1,12 +1,13 @@
 services:
   - type: web
-    name: wordle-game
+    name: wurdle
     env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    repo: https://github.com/yourusername/wordle-game # Replace with your repo
-    autoDeploy: true
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.9
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    disk:
+      name: wurdle-disk
+      mountPath: /opt/render/project/src/wordle.db
+      sizeGB: 1
