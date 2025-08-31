@@ -87,16 +87,20 @@ def index():
     last_played = session.get('last_played_date')
     
     # Check if user has already played today
-    if last_played == today:
+    if last_played == today and not session.get('guesses'):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
     
-    # Initialize session safely
+    # Preserve existing session state instead of reinitializing
     if 'guesses' not in session:
         session['guesses'] = []
     if 'game_over' not in session:
         session['game_over'] = False
     if 'hard_mode' not in session:
         session['hard_mode'] = session.get('hard_mode', False)
+    # Only set last_played_date if game is new or completed today
+    if not last_played or (last_played == today and session['game_over']):
+        session['last_played_date'] = today if not last_played else last_played
+
     return render_template('index.html', game_blocked=False)
 
 @app.route('/wordlist')
