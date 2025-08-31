@@ -12,10 +12,15 @@ import hashlib
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+# Define the database path
+DB_PATH = "/opt/render/project/src/wordle.db"
+
 # Initialize SQLite database
 def init_db():
     try:
-        with sqlite3.connect('wordle.db') as conn:
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
             c.execute('''CREATE TABLE IF NOT EXISTS daily_word (
                 date TEXT PRIMARY KEY,
@@ -35,6 +40,7 @@ def init_db():
             conn.commit()
     except sqlite3.Error as e:
         print(f"Database initialization error: {e}")
+        raise
 
 # Load word list
 try:
@@ -48,7 +54,7 @@ except FileNotFoundError:
 def get_daily_word():
     today = str(date.today())
     try:
-        with sqlite3.connect('wordle.db') as conn:
+        with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
             c.execute('SELECT word FROM daily_word WHERE date = ?', (today,))
             result = c.fetchone()
@@ -107,7 +113,7 @@ def wordlist():
 @app.route('/stats')
 def stats():
     try:
-        with sqlite3.connect('wordle.db') as conn:
+        with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
             c.execute('''SELECT date(timestamp) as day, 
                          SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
@@ -154,7 +160,7 @@ def profile():
     ip_address = request.remote_addr
     if 'username' not in session or not session.get('username'):
         try:
-            with sqlite3.connect('wordle.db') as conn:
+            with sqlite3.connect(DB_PATH) as conn:
                 c = conn.cursor()
                 c.execute('SELECT username FROM users WHERE ip_address = ?', (ip_address,))
                 result = c.fetchone()
@@ -181,7 +187,7 @@ def profile():
         new_username = request.form.get('username', '').strip()
         if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
             try:
-                with sqlite3.connect('wordle.db') as conn:
+                with sqlite3.connect(DB_PATH) as conn:
                     c = conn.cursor()
                     c.execute('UPDATE users SET username = ? WHERE ip_address = ?', (new_username, ip_address))
                     conn.commit()
@@ -275,7 +281,7 @@ def guess():
     if game_over:
         # Log the game session
         try:
-            with sqlite3.connect('wordle.db') as conn:
+            with sqlite3.connect(DB_PATH) as conn:
                 c = conn.cursor()
                 c.execute('''INSERT INTO game_logs (timestamp, ip_address, win, guesses)
                              VALUES (?, ?, ?, ?)''', 
