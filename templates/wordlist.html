@@ -20,6 +20,9 @@
             border-bottom: 2px solid #000000; /* Black border */
             height: 45px; /* Fixed height to match content push */
             box-sizing: border-box; /* Include padding in height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .header h1 {
             margin: 0;
@@ -34,10 +37,16 @@
             background-clip: text;
             color: transparent;
         }
-        .header p {
-            margin: 2px 0 0;
-            font-size: 14px; /* Reduced font size */
-            color: #26A69A; /* Teal */
+        .header .gear-icon {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 16px; /* Reduced to ~50% of 24px */
+            text-decoration: none;
+            color: white;
+            background-color: #000000; /* Black background */
+            padding: 2px 4px; /* Padding for background */
+            border-radius: 4px; /* Rounded corners */
         }
         .footer {
             position: fixed;
@@ -61,25 +70,50 @@
             margin-bottom: 40px; /* Adjusted for footer */
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
+            text-align: center;
+            padding-bottom: 60px; /* Added space for button and future content */
+        }
+        .word-list {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .back-button {
+            position: absolute;
+            bottom: 60px; /* Position above footer with space */
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #26A69A;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .back-button:hover {
+            background-color: #1e7d71;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Wurdle</h1>
-        <p>Challenge Your Word Skills Daily!</p>
+        <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
-        <h1>Wurdle - Valid Word List</h1>
-        <p>Below is the list of valid 5-letter words for the game. These are the words you can use for your guesses.</p>
-        <div id="word-list">
+        <h2>Valid Word List</h2>
+        <div class="word-list">
             {% for word in words %}
-                <div class="word-item">{{ word }}</div>
+                <p>{{ word }}</p>
             {% endfor %}
         </div>
-        <a href="/">Back to Game</a>
-        <a href="/stats">View Stats</a>
     </div>
+    <a href="/" class="back-button">Back to Game</a>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
         <p>Play Now and Share with Friends!</p>
