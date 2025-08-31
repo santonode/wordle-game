@@ -3,7 +3,7 @@ services:
     name: wurdle
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python app.py"
+    startCommand: "gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app"  # Updated start command
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
