@@ -1,0 +1,35 @@
+WURDLE
+The rules of Wordle are to guess a five-letter word in six attempts. 
+After each guess, the tiles of the letters change color to provide clues for your next attempt. 
+There is only one new puzzle released each day. 
+
+Basic gameplay
+Start guessing: Type any valid five-letter word into the first row and press enter.
+Evaluate the colored tiles: The game provides feedback on your guess with three colors:
+Teal: The letter is correct and is in the right spot.
+Yellow: The letter is in the word but is in the wrong position.
+Red: The letter is not in the word at all.
+Refine your guess: Use the color-coded clues to make a more informed guess in the next row.
+Win or lose: Continue guessing until all tiles turn green, which means you have solved the word. 
+If you run out of guesses, you lose the game for the day. 
+
+Advanced rules and features
+One puzzle per day: A new puzzle is available for everyone at midnight.
+Hard Mode: For an extra challenge, players can enable Hard Mode in the settings. 
+This rule requires you to use any green or yellow letters you have found in all subsequent guesses.
+Curated word list: The answer is chosen from a specific list of five-letter words. 
+This list excludes obscure words, vulgar terms, and most plurals ending in -S or -ES.
+Sharing results: After finishing, you can click the "Share" button to copy a color-coded grid 
+of your results to show friends on social media without spoiling the words.
+
+wordle-game/
+├── static/
+│   ├── styles.css
+├── templates/
+│   ├── stats.html
+│   ├── index.html
+│   ├── wordlist.html
+├── app.py
+├── words.txt
+├── requirements.txt
+├── render.yaml
