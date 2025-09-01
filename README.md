@@ -29,6 +29,7 @@ wordle-game/
 │   ├── stats.html
 │   ├── index.html
 │   ├── wordlist.html
+│   ├── profile.html
 ├── app.py
 ├── words.txt
 ├── requirements.txt
