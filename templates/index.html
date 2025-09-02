@@ -142,6 +142,7 @@
                 body: JSON.stringify({ guess: input })
             });
             const data = await response.json();
+            console.log('Server response:', data); // Debug log
 
             if (data.error) {
                 alert(data.error);
@@ -154,11 +155,19 @@
 
             if (data.message) {
                 document.getElementById('message').textContent = data.message;
-                if (data.message.includes('won') || data.message.includes('Game over')) {
+                if (data.message.includes('won') || data.message.includes('Game over') || data.message.includes('No more guesses')) {
                     gameOver = true;
                     if (data.share_text) {
                         document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                    } else {
+                        console.log('No share_text received:', data);
                     }
+                }
+            } else if (guesses.length >= 6) {
+                gameOver = true;
+                console.log('Game over by guess limit, no message:', data);
+                if (data.share_text) {
+                    document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
                 }
             }
         }
@@ -201,11 +210,19 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Initial load response:', data); // Debug log
                 if (data.guesses) {
                     guesses = data.guesses;
                     renderBoard();
                 }
-                if (data.message && (data.message.includes('won') || data.message.includes('Game over'))) {
+                if (data.message && (data.message.includes('won') || data.message.includes('Game over') || data.message.includes('No more guesses'))) {
+                    gameOver = true;
+                    if (data.share_text) {
+                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                    } else {
+                        console.log('No share_text on initial load:', data);
+                    }
+                } else if (data.guesses && data.guesses.length >= 6) {
                     gameOver = true;
                     if (data.share_text) {
                         document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
