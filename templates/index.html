@@ -95,22 +95,22 @@
     <div class="content">
         {% if game_blocked %}
             <p id="blocked-message">{{ message }}</p>
-            <a href="/wordlist">View Word List</a>
-            <a href="/stats">View Stats</a>
+            <a href="/wordlist" class="nav-button">View Word List</a>
+            <a href="/stats" class="nav-button">View Stats</a>
         {% else %}
             <div id="game-board"></div>
             <div id="input-area">
                 <div class="input-row">
-                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word">
+                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" style="width: 150px; padding: 5px; font-size: 16px;">
                     <button onclick="submitGuess()">Submit</button>
                 </div>
                 <div class="link-row">
-                    <a href="/wordlist">View Word List</a>
-                    <a href="/stats">View Stats</a>
+                    <a href="/wordlist" class="nav-button">View Word List</a>
+                    <a href="/stats" class="nav-button">View Stats</a>
                 </div>
             </div>
             <p id="message"></p>
-            <textarea id="share-text" readonly></textarea>
+            <textarea id="share-text" readonly style="width: 300px; height: 100px; padding: 5px; font-size: 14px; resize: vertical;"></textarea>
             <button onclick="copyShareText()">Share Results</button>
         {% endif %}
     </div>
