@@ -101,7 +101,7 @@
             <div id="game-board"></div>
             <div id="input-area">
                 <div class="input-row">
-                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" style="width: 150px; padding: 5px; font-size: 16px;">
+                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" style="width: 150px; padding: 5px; font-size: 16px;" oninput="this.value = this.value.toUpperCase().slice(0, 5);">
                     <button onclick="submitGuess()">Submit</button>
                 </div>
                 <div class="link-row">
