@@ -71,7 +71,7 @@
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
             text-align: center;
-            padding-bottom: 60px; /* Added space for button and future content */
+            padding-bottom: 120px; /* Increased space for stats, button, and future content */
         }
         .username {
             font-size: 24px;
@@ -125,6 +125,22 @@
         .back-button:hover {
             background-color: #1e7d71;
         }
+        .stats-container {
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .stat-item {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #263238;
+        }
+        .stat-item strong {
+            color: #26A69A;
+        }
     </style>
 </head>
 <body>
@@ -144,6 +160,13 @@
         {% if message %}
             <div class="message">{{ message }}</div>
         {% endif %}
+        <div class="stats-container">
+            <div class="stat-item"><strong>Wins:</strong> {{ wins }}</div>
+            <div class="stat-item"><strong>Losses:</strong> {{ losses }}</div>
+            <div class="stat-item"><strong>Average Guesses:</strong> {{ "%.1f" | format(avg_guesses) }}</div>
+        </div>
+        <!-- Debug output (remove in production) -->
+        <p>Debug: wins={{ wins }}, losses={{ losses }}, avg_guesses={{ avg_guesses }}</p>
     </div>
     <a href="/" class="back-button">Back to Game</a>
     <div class="footer">
