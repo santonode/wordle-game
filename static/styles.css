@@ -1,94 +1,62 @@
+/* Existing styles for other pages */
 body {
     font-family: Arial, sans-serif;
-    text-align: center;
+    margin: 0;
+    padding: 0;
     background-color: #f0f0f0;
-    border: 2px solid #000000; /* Black border around entire app */
-    margin: 0; /* Ensure no default margin interferes */
-    padding: 0; /* Ensure no default padding interferes */
 }
 
-#game-board {
-    margin: 20px auto;
-    max-width: 300px;
-}
-
-.row {
+header {
     display: flex;
-    justify-content: center;
-    margin-bottom: 5px;
-}
-
-.tile {
-    width: 50px;
-    height: 50px;
-    line-height: 50px;
-    margin: 2px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    text-transform: uppercase;
-    background-color: #263238; /* Navy background */
-    /* Explicitly no border to avoid confusion */
-}
-
-.teal { background-color: #26A69A; color: white; } /* Correct letters */
-.yellow { background-color: #FFCA28; color: black; } /* Misplaced letters */
-.red { background-color: #EF5350; color: white; } /* Wrong letters */
-
-#input-area {
-    margin: 20px 0;
-}
-
-#guess-input {
-    padding: 10px;
-    font-size: 16px;
-    text-transform: uppercase;
-}
-
-button, a {
+    justify-content: space-between;
+    align-items: center;
     padding: 10px 20px;
-    font-size: 16px;
-    margin: 0 10px;
+    background-color: #333;
+    color: white;
+}
+
+header h1 {
+    margin: 0;
+}
+
+.gear-icon img {
+    width: 24px;
+    height: 24px;
     cursor: pointer;
-    text-decoration: none;
-    color: #333;
-    background-color: #ddd;
+}
+
+main {
+    padding: 20px;
+}
+
+.word-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.word-block {
+    background-color: white;
     border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-button:hover, a:hover {
-    background-color: #ccc;
-}
-
-#share-text {
-    margin-top: 20px;
-    width: 200px;
-    height: 100px;
-}
-
-#word-list {
-    max-width: 600px;
-    margin: 20px auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.word-item {
-    width: 100px;
-    margin: 5px;
     padding: 10px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    text-transform: uppercase;
-    font-size: 16px;
     text-align: center;
+    font-size: 16px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word; /* Ensure long words wrap */
 }
 
-.chart-image {
-    max-width: 80%;
-    margin: 20px auto;
-    display: block;
+/* Responsive design */
+@media (max-width: 768px) {
+    .word-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .word-grid {
+        grid-template-columns: 1fr;
+    }
 }
