@@ -196,6 +196,23 @@ def profile():
             print(f"Database error in profile: {e}")
             session['username'] = generate_username(ip_address)  # Fallback
 
+    # Calculate user stats from game_logs
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    SELECT COUNT(*) as total, SUM(win) as wins, SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END) as losses, 
+                           AVG(guesses) as avg_guesses
+                    FROM game_logs WHERE ip_address = %s
+                ''', (ip_address,))
+                stats = cur.fetchone()
+                wins = stats[1] if stats[1] else 0
+                losses = stats[2] if stats[2] else 0
+                avg_guesses = round(stats[3], 1) if stats[3] else 0.0
+    except psycopg.Error as e:
+        print(f"Database error fetching stats: {e}")
+        wins, losses, avg_guesses = 0, 0, 0.0
+
     if request.method == 'POST':
         if 'clear_session' in request.form:
             current_username = session.get('username')
@@ -204,7 +221,7 @@ def profile():
             session['guesses'] = []
             session['game_over'] = False
             session['hard_mode'] = False
-            return render_template('profile.html', username=session['username'], message="Session data cleared. Please return to the game.")
+            return render_template('profile.html', username=session['username'], message="Session data cleared. Please return to the game.", wins=wins, losses=losses, avg_guesses=avg_guesses)
         new_username = request.form.get('username', '').strip()
         if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
             try:
@@ -213,14 +230,14 @@ def profile():
                         cur.execute('UPDATE users SET username = %s WHERE ip_address = %s', (new_username, ip_address))
                         conn.commit()
                 session['username'] = new_username
-                return render_template('profile.html', username=new_username, message="Username updated successfully!")
+                return render_template('profile.html', username=new_username, message="Username updated successfully!", wins=wins, losses=losses, avg_guesses=avg_guesses)
             except psycopg.Error as e:
                 print(f"Database error updating username: {e}")
-                return render_template('profile.html', username=session['username'], message="Error updating username.")
+                return render_template('profile.html', username=session['username'], message="Error updating username.", wins=wins, losses=losses, avg_guesses=avg_guesses)
         else:
-            return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.")
+            return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.", wins=wins, losses=losses, avg_guesses=avg_guesses)
 
-    return render_template('profile.html', username=session['username'])
+    return render_template('profile.html', username=session['username'], wins=wins, losses=losses, avg_guesses=avg_guesses)
 
 @app.route('/guess', methods=['POST'])
 def guess():
