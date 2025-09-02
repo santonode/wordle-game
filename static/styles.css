@@ -4,6 +4,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f0f0f0;
+    text-align: center;
 }
 
 header {
@@ -27,13 +28,12 @@ header h1 {
 
 main {
     padding: 20px;
-    text-align: center;
 }
 
 /* Gameboard styles */
-.gameboard {
+#gameboard {
     display: grid;
-    grid-template-columns: repeat(5, 50px);
+    grid-template-columns: repeat(5, 60px);
     gap: 5px;
     margin: 20px auto;
     justify-content: center;
@@ -44,14 +44,15 @@ main {
 }
 
 .cell {
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border: 2px solid #ccc;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 24px;
     background-color: white;
+    transition: all 0.3s;
 }
 
 .cell.green {
@@ -72,7 +73,7 @@ main {
     border-color: #787c7e;
 }
 
-.message {
+#message {
     margin: 10px 0;
     font-size: 18px;
 }
