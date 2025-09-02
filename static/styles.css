@@ -49,39 +49,23 @@ main {
 }
 
 /* Word list styles */
-.word-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    max-width: 1200px;
-    margin: 0 auto;
+#word-list {
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: left;
 }
 
-.word-block {
-    background-color: white;
+.word-item {
+    padding: 5px 10px;
+    margin: 2px 0;
+    background-color: #fff;
     border: 1px solid #ccc;
-    padding: 10px;
-    text-align: center;
-    font-size: 16px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    word-wrap: break-word;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* Responsive design for word list */
-@media (max-width: 768px) {
-    .word-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 480px) {
-    .word-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Header and Footer styles (moved from inline) */
+/* Header and Footer styles */
 .header {
     position: fixed;
     top: 0;
@@ -115,6 +99,12 @@ main {
     color: transparent;
 }
 
+.header p {
+    margin: 2px 0 0;
+    font-size: 14px;
+    color: #26A69A;
+}
+
 .header .gear-icon {
     position: absolute;
     top: 5px;
@@ -144,4 +134,11 @@ main {
 .footer p {
     margin: 3px 0;
     font-size: 12px;
+}
+
+/* Responsive design for word list */
+@media (max-width: 600px) {
+    #word-list {
+        max-width: 100%;
+    }
 }
