@@ -1,4 +1,4 @@
-/* Existing styles for other pages */
+/* Reset and global styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -27,8 +27,63 @@ header h1 {
 
 main {
     padding: 20px;
+    text-align: center;
 }
 
+/* Gameboard styles */
+.gameboard {
+    display: grid;
+    grid-template-columns: repeat(5, 50px);
+    gap: 5px;
+    margin: 20px auto;
+    justify-content: center;
+}
+
+.row {
+    display: contents;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background-color: white;
+}
+
+.cell.green {
+    background-color: #6aaa64;
+    color: white;
+    border-color: #6aaa64;
+}
+
+.cell.yellow {
+    background-color: #c9b458;
+    color: white;
+    border-color: #c9b458;
+}
+
+.cell.gray {
+    background-color: #787c7e;
+    color: white;
+    border-color: #787c7e;
+}
+
+.message {
+    margin: 10px 0;
+    font-size: 18px;
+}
+
+input, button {
+    margin: 5px;
+    padding: 5px 10px;
+    font-size: 16px;
+}
+
+/* Word list styles */
 .word-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -45,10 +100,10 @@ main {
     font-size: 16px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    word-wrap: break-word; /* Ensure long words wrap */
+    word-wrap: break-word;
 }
 
-/* Responsive design */
+/* Responsive design for word list */
 @media (max-width: 768px) {
     .word-grid {
         grid-template-columns: repeat(2, 1fr);
