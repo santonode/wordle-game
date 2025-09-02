@@ -15,7 +15,7 @@
     </header>
     <main>
         <div class="word-grid">
-            {% for word in words %}
+            {% for word in words | sort %}
                 <div class="word-block">{{ word }}</div>
             {% endfor %}
         </div>
