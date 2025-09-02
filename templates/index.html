@@ -34,25 +34,40 @@
     </main>
     <script>
         function updateBoard() {
-            fetch('/guess', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guess: '' }) })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.guesses) {
-                        const board = document.getElementById('gameboard');
-                        data.guesses.forEach((guess, rowIdx) => {
-                            const row = board.querySelector(`.row[data-row="${rowIdx}"]`);
-                            guess.guess.split('').forEach((letter, colIdx) => {
-                                const cell = row.querySelector(`.cell[data-col="${colIdx}"]`);
-                                cell.textContent = letter;
-                                if (guess.result && guess.result[colIdx]) {
-                                    cell.className = `cell ${guess.result[colIdx]}`;
+            fetch('/guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guess: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.guesses) {
+                    const board = document.getElementById('gameboard');
+                    board.innerHTML = ''; // Clear existing board
+                    for (let i = 0; i < 6; i++) {
+                        const row = document.createElement('div');
+                        row.className = 'row';
+                        row.dataset.row = i;
+                        for (let j = 0; j < 5; j++) {
+                            const cell = document.createElement('div');
+                            cell.className = 'cell';
+                            cell.dataset.row = i;
+                            cell.dataset.col = j;
+                            if (data.guesses[i]) {
+                                cell.textContent = data.guesses[i].guess[j] || '';
+                                if (data.guesses[i].result && data.guesses[i].result[j]) {
+                                    cell.classList.add(data.guesses[i].result[j]);
                                 }
-                            });
-                        });
-                        if (data.message) document.getElementById('message').textContent = data.message;
-                        if (data.game_over) alert(data.message || 'Game Over!');
+                            }
+                            row.appendChild(cell);
+                        }
+                        board.appendChild(row);
                     }
-                });
+                    if (data.message) document.getElementById('message').textContent = data.message;
+                    if (data.game_over) alert(data.message || 'Game Over!');
+                }
+            })
+            .catch(error => console.error('Error updating board:', error));
         }
 
         function submitGuess() {
@@ -70,7 +85,8 @@
                         updateBoard();
                         document.getElementById('guess-input').value = '';
                     }
-                });
+                })
+                .catch(error => console.error('Error submitting guess:', error));
             } else {
                 alert('Please enter a 5-letter word.');
             }
@@ -82,7 +98,8 @@
                 .then(data => {
                     if (data.error) alert(data.error);
                     else updateBoard();
-                });
+                })
+                .catch(error => console.error('Error toggling hard mode:', error));
         }
 
         // Initial load
