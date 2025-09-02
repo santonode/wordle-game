@@ -116,8 +116,6 @@
             <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
                 {% if share_text %}
                     {{ share_text }} wurdle.santoelectronics.com
-                {% else %}
-                    Enter guesses to see results here! wurdle.santoelectronics.com
                 {% endif %}
             </textarea>
         {% endif %}
@@ -129,6 +127,7 @@
 
     <script>
         let guesses = [];
+        let gameOver = false;
 
         async function submitGuess() {
             const input = document.getElementById('guess-input')?.value.toUpperCase();
@@ -155,7 +154,12 @@
 
             if (data.message) {
                 document.getElementById('message').textContent = data.message;
-                document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                if (data.message.includes('won') || data.message.includes('Game over')) {
+                    gameOver = true;
+                    if (data.share_text) {
+                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                    }
+                }
             }
         }
 
@@ -201,8 +205,11 @@
                     guesses = data.guesses;
                     renderBoard();
                 }
-                if (data.share_text) {
-                    document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                if (data.message && (data.message.includes('won') || data.message.includes('Game over'))) {
+                    gameOver = true;
+                    if (data.share_text) {
+                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                    }
                 }
             });
         };
