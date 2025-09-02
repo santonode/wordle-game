@@ -17,26 +17,44 @@
         {% if game_blocked %}
             <p>{{ message }}</p>
         {% else %}
-            <div class="gameboard">
+            <div id="gameboard">
                 {% for i in range(6) %}
-                    <div class="row">
+                    <div class="row" data-row="{{ i }}">
                         {% for j in range(5) %}
-                            <div class="cell" data-row="{{ i }}" data-col="{{ j }}">
-                                {% if guesses and i < guesses|length %}
-                                    {{ guesses[i].guess[j] if j < guesses[i].guess|length else '' }}
-                                {% endif %}
-                            </div>
+                            <div class="cell" data-row="{{ i }}" data-col="{{ j }}"></div>
                         {% endfor %}
                     </div>
                 {% endfor %}
             </div>
-            <div class="message">{{ message }}</div>
-            <input type="text" id="guess-input" placeholder="Enter a 5-letter word" autocomplete="off">
+            <div id="message"></div>
+            <input type="text" id="guess-input" placeholder="Enter a 5-letter word" autocomplete="off" maxlength="5">
             <button onclick="submitGuess()">Submit</button>
             <button onclick="toggleHardMode()">Toggle Hard Mode</button>
         {% endif %}
     </main>
     <script>
+        function updateBoard() {
+            fetch('/guess', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guess: '' }) })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.guesses) {
+                        const board = document.getElementById('gameboard');
+                        data.guesses.forEach((guess, rowIdx) => {
+                            const row = board.querySelector(`.row[data-row="${rowIdx}"]`);
+                            guess.guess.split('').forEach((letter, colIdx) => {
+                                const cell = row.querySelector(`.cell[data-col="${colIdx}"]`);
+                                cell.textContent = letter;
+                                if (guess.result && guess.result[colIdx]) {
+                                    cell.className = `cell ${guess.result[colIdx]}`;
+                                }
+                            });
+                        });
+                        if (data.message) document.getElementById('message').textContent = data.message;
+                        if (data.game_over) alert(data.message || 'Game Over!');
+                    }
+                });
+        }
+
         function submitGuess() {
             const guess = document.getElementById('guess-input').value.toUpperCase();
             if (guess.length === 5) {
@@ -48,7 +66,10 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) alert(data.error);
-                    else location.reload();
+                    else {
+                        updateBoard();
+                        document.getElementById('guess-input').value = '';
+                    }
                 });
             } else {
                 alert('Please enter a 5-letter word.');
@@ -60,9 +81,12 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) alert(data.error);
-                    else location.reload();
+                    else updateBoard();
                 });
         }
+
+        // Initial load
+        window.onload = updateBoard;
     </script>
 </body>
 </html>
