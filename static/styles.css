@@ -65,6 +65,23 @@ main {
     box-sizing: border-box;
 }
 
+/* Navigation buttons */
+.nav-button {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #263238;
+    color: white;
+    text-decoration: none;
+    border: 2px solid #000000;
+    cursor: pointer;
+    border-radius: 0; /* Ensure square corners */
+}
+
+.nav-button:hover {
+    background-color: #1a252a;
+}
+
 /* Header and Footer styles */
 .header {
     position: fixed;
