@@ -110,8 +110,17 @@
                 </div>
             </div>
             <p id="message"></p>
-            <textarea id="share-text" readonly style="width: 300px; height: 100px; padding: 5px; font-size: 14px; resize: vertical;"></textarea>
-            <button onclick="copyShareText()">Share Results</button>
+            <div style="text-align: center; margin: 10px 0;">
+                <button onclick="copyShareText()" style="margin-bottom: 5px;">Share Results</button>
+            </div>
+            <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
+                {% if share_text %}
+                    {{ share_text }}
+                {% else %}
+                    Enter guesses to see results here!
+                {% endif %}
+            </textarea>
+            <p style="font-size: 12px; text-align: center; margin-top: 5px;"><a href="https://wurdle.santoelectronics.com" style="color: #263238; text-decoration: none;">wurdle.santoelectronics.com</a></p>
         {% endif %}
     </div>
     <div class="footer">
@@ -192,6 +201,9 @@
                 if (data.guesses) {
                     guesses = data.guesses;
                     renderBoard();
+                }
+                if (data.share_text) {
+                    document.getElementById('share-text').value = data.share_text;
                 }
             });
         };
