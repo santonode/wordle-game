@@ -3,22 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word List - Wurdle</title>
+    <title>Wurdle - Word List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #263238;
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000;
+            height: 45px;
+            box-sizing: border-box;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 10px;
+            background: linear-gradient(45deg, #26A69A, #FFCA28);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header p {
+            margin: 2px 0 0;
+            font-size: 14px;
+            color: #26A69A;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238;
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000;
+            height: 35px;
+            box-sizing: border-box;
+        }
+        .footer p {
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        .content {
+            margin-top: 50px;
+            margin-bottom: 40px;
+            min-height: calc(100vh - 85px);
+            padding-top: 5px;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Word List</h1>
-        <a href="/profile" class="gear-icon">
-            <img src="{{ url_for('static', filename='gear-icon.png') }}" alt="Settings">
-        </a>
-    </header>
-    <main>
-        <div class="word-grid">
-            {% for word in words | sort %}
-                <div class="word-block">{{ word }}</div>
+    <div class="header">
+        <h1>Wurdle</h1>
+        <p>Challenge Your Word Skills Daily!</p>
+    </div>
+    <div class="content">
+        <h1>Wurdle - Valid Word List</h1>
+        <p>Below is the list of valid 5-letter words for the game. These are the words you can use for your guesses.</p>
+        <div id="word-list">
+            {% for word in words %}
+                <div class="word-item">{{ word }}</div>
             {% endfor %}
         </div>
-    </main>
+        <a href="/">Back to Game</a>
+        <a href="/stats">View Stats</a>
+    </div>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends!</p>
+    </div>
 </body>
 </html>
