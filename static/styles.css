@@ -1,176 +1,37 @@
-/* Reset and global styles */
+/* styles.css */
 body {
     font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f0f0f0;
-    text-align: center;
+    margin: 20px;
 }
 
-main {
-    padding: 20px;
-}
-
-/* Gameboard styles */
-.row {
-    display: flex;
-    justify-content: center;
+input[type="text"],
+input[type="password"] {
+    width: 50%; /* Reduce width by 50% of the default (assuming default is 100% of container) */
+    padding: 5px;
     margin: 5px 0;
-}
-
-.tile {
-    width: 50px;
-    height: 50px;
-    margin: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    border: 2px solid #ccc;
-    transition: all 0.3s;
-}
-
-.tile.teal {
-    background-color: #26A69A;
-    color: white;
-    border-color: #26A69A;
-}
-
-.tile.yellow {
-    background-color: #FFCA28;
-    color: black;
-    border-color: #FFCA28;
-}
-
-.tile.red {
-    background-color: #EF5350;
-    color: white;
-    border-color: #EF5350;
-}
-
-/* Word list styles */
-#word-list {
-    margin: 20px auto;
-    max-width: 600px;
-    text-align: left;
-}
-
-.word-item {
-    padding: 5px 10px;
-    margin: 2px 0;
-    background-color: #fff;
     border: 1px solid #ccc;
-    display: inline-block;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Navigation buttons */
-.nav-button {
-    display: inline-block;
-    padding: 5px 10px;
-    margin: 5px;
-    background-color: #263238;
-    color: white;
-    text-decoration: none;
-    border: 2px solid #000000;
-    cursor: pointer;
-    border-radius: 0; /* Ensure square corners */
-}
-
-.nav-button:hover {
-    background-color: #1a252a;
-}
-
-/* General button styles */
-button {
-    padding: 5px 10px;
-    font-size: 16px;
-    background-color: #263238;
-    color: white;
-    border: 2px solid #000000;
-    cursor: pointer;
-    border-radius: 0; /* Ensure square corners */
-}
-
-button:hover {
-    background-color: #1a252a;
-}
-
-/* Header and Footer styles */
-.header {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    background-color: #263238;
-    color: white;
-    padding: 5px 0;
-    text-align: center;
-    z-index: 1000;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    border-bottom: 2px solid #000000;
-    height: 45px;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.header h1 {
-    margin: 0;
-    font-size: 28px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    border-radius: 10px;
-    display: inline-block;
-    padding: 5px 10px;
-    background: linear-gradient(45deg, #26A69A, #FFCA28);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.header p {
-    margin: 2px 0 0;
-    font-size: 14px;
-    color: #26A69A;
-}
-
-.header .gear-icon {
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    font-size: 16px;
-    text-decoration: none;
-    color: white;
-    background-color: #000000;
-    padding: 2px 4px;
     border-radius: 4px;
 }
 
-.footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background-color: #263238;
+button {
+    padding: 5px 10px;
+    margin: 5px 0;
+    background-color: #4CAF50;
     color: white;
-    padding: 5px 0;
-    text-align: center;
-    z-index: 1000;
-    border-top: 2px solid #000000;
-    height: 35px;
-    box-sizing: border-box;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-.footer p {
-    margin: 3px 0;
-    font-size: 12px;
+button:hover {
+    background-color: #45a049;
 }
 
-/* Responsive design for word list */
-@media (max-width: 600px) {
-    #word-list {
-        max-width: 100%;
-    }
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+form {
+    margin-bottom: 20px;
 }
