@@ -196,6 +196,8 @@ def stats():
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     ip_address = request.remote_addr
+    user_type = 'Guest'  # Default initialization
+    points = 0  # Default initialization
     if 'username' not in session or not session.get('username'):
         try:
             with psycopg.connect(DATABASE_URL) as conn:
@@ -215,10 +217,13 @@ def profile():
         except psycopg.Error as e:
             print(f"Database error initializing user: {str(e)}")
             session['username'] = generate_username(ip_address)  # Fallback
-            user_type = 'Guest'
-            points = 0
 
     # Fetch user stats from user_stats table
+    wins = 0
+    losses = 0
+    total_guesses = 0
+    games_played = 0
+    avg_guesses = 0.0
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -228,8 +233,6 @@ def profile():
                     wins, losses, total_guesses, games_played = stats
                     avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
                 else:
-                    wins, losses, total_guesses, games_played = 0, 0, 0, 0
-                    avg_guesses = 0.0
                     # Ensure user exists in users before inserting into user_stats
                     cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (ip_address,))
                     if not cur.fetchone():
@@ -240,8 +243,6 @@ def profile():
                     conn.commit()
     except psycopg.Error as e:
         print(f"Database error fetching stats: {str(e)}")
-        wins, losses, total_guesses, games_played = 0, 0, 0, 0
-        avg_guesses = 0.0
 
     if request.method == 'POST':
         if 'clear_session' in request.form:
@@ -269,7 +270,7 @@ def profile():
                 user_type = 'Member'
                 return render_template('profile.html', username=new_username, message="Username updated successfully!", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
             except psycopg.Error as e:
-                print(f"Database error updating username: {str(e)}")  # Simplified error logging
+                print(f"Database error updating username: {str(e)}")
                 return render_template('profile.html', username=session['username'], message=f"Error updating username: {str(e)}", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
         else:
             return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
