@@ -164,9 +164,11 @@
             <div class="stat-item"><strong>Wins:</strong> {{ wins }}</div>
             <div class="stat-item"><strong>Losses:</strong> {{ losses }}</div>
             <div class="stat-item"><strong>Average Guesses:</strong> {{ "%.1f" | format(avg_guesses) }}</div>
+            <div class="stat-item"><strong>User Type:</strong> {{ user_type }}</div>
+            <div class="stat-item"><strong>Points:</strong> {{ points }}</div>
         </div>
         <!-- Debug output (remove in production) -->
-        <p>Debug: wins={{ wins }}, losses={{ losses }}, avg_guesses={{ avg_guesses }}</p>
+        <p>Debug: wins={{ wins }}, losses={{ losses }}, avg_guesses={{ avg_guesses }}, user_type={{ user_type }}, points={{ points }}</p>
     </div>
     <a href="/" class="back-button">Back to Game</a>
     <div class="footer">
