@@ -362,6 +362,12 @@ def guess():
                         INSERT INTO game_logs (timestamp, ip_address, win, guesses)
                         VALUES (%s, %s, %s, %s)
                     ''', (datetime.now(), request.remote_addr, win, len(session['guesses'])))
+                    # Ensure user exists in users before updating user_stats
+                    cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (request.remote_addr,))
+                    if not cur.fetchone():
+                        username = generate_username(request.remote_addr)
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
+                                  (request.remote_addr, username, 'Guest', 0))
                     # Update user_stats
                     cur.execute('''
                         INSERT INTO user_stats (ip_address, wins, losses, total_guesses, games_played)
