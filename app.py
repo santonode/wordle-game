@@ -263,8 +263,10 @@ def profile():
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
+                            hashed_password = hash_password(password)
+                            print(f"Attempting login for {username} with hashed password: {hashed_password}")  # Debug
                             cur.execute('SELECT user_type, points FROM users WHERE username = %s AND password = %s', 
-                                      (username, hash_password(password)))
+                                      (username, hashed_password))
                             result = cur.fetchone()
                             if result:
                                 user_type, points = result
@@ -273,6 +275,7 @@ def profile():
                                 conn.commit()
                                 return redirect(url_for('profile'))
                             else:
+                                print(f"Login failed for {username}: No match found")  # Debug
                                 return render_template('profile.html', username=session['username'], message="Invalid username or password.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
                 except psycopg.Error as e:
                     print(f"Database error during login: {str(e)}")
