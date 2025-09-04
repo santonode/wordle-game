@@ -22,12 +22,14 @@ def init_db():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
+                # Ensure daily_word table exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
                         date TEXT PRIMARY KEY,
                         word TEXT NOT NULL
                     )
                 ''')
+                # Ensure game_logs table exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS game_logs (
                         id SERIAL PRIMARY KEY,
@@ -37,14 +39,17 @@ def init_db():
                         guesses INTEGER
                     )
                 ''')
+                # Ensure users table exists and add missing columns if needed
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         ip_address TEXT PRIMARY KEY,
-                        username TEXT NOT NULL,
-                        user_type TEXT DEFAULT 'Guest',
-                        points INTEGER DEFAULT 0
+                        username TEXT NOT NULL
                     )
                 ''')
+                # Add user_type and points columns if they don't exist
+                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type TEXT DEFAULT \'Guest\'')
+                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0')
+                # Ensure user_stats table exists with foreign key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
                         ip_address TEXT PRIMARY KEY,
@@ -52,16 +57,16 @@ def init_db():
                         losses INTEGER DEFAULT 0,
                         total_guesses INTEGER DEFAULT 0,
                         games_played INTEGER DEFAULT 0,
-                        FOREIGN KEY (ip_address) REFERENCES users(ip_address)
+                        FOREIGN KEY (ip_address) REFERENCES users(ip_address) ON DELETE CASCADE
                     )
                 ''')
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
     except psycopg.Error as e:
-        print(f"Database initialization error: {e}")
+        print(f"Database initialization error: {str(e)}")
         raise
     except Exception as e:
-        print(f"Unexpected error during initialization: {e}")
+        print(f"Unexpected error during initialization: {str(e)}")
         raise
 
 # Load word list
@@ -91,10 +96,10 @@ def get_daily_word():
                     print(f"Inserted new word for {today}: {word}")
                     return word
     except psycopg.Error as e:
-        print(f"Database error in get_daily_word: {e}")
+        print(f"Database error in get_daily_word: {str(e)}")
         return random.choice(WORDS)  # Fallback to random word
     except Exception as e:
-        print(f"Unexpected error in get_daily_word: {e}")
+        print(f"Unexpected error in get_daily_word: {str(e)}")
         return random.choice(WORDS)  # Fallback to random word
 
 # Generate username based on IP and session data
@@ -182,10 +187,10 @@ def stats():
         
         return render_template('stats.html', chart=chart, table_data=table_data)
     except psycopg.Error as e:
-        print(f"Database error in stats: {e}")
+        print(f"Database error in stats: {str(e)}")
         return render_template('stats.html', chart=None, table_data=None)
     except Exception as e:
-        print(f"Unexpected error in stats: {e}")
+        print(f"Unexpected error in stats: {str(e)}")
         return render_template('stats.html', chart=None, table_data=None)
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -208,7 +213,7 @@ def profile():
                         user_type = 'Guest'
                         points = 0
         except psycopg.Error as e:
-            print(f"Database error initializing user: {e}")
+            print(f"Database error initializing user: {str(e)}")
             session['username'] = generate_username(ip_address)  # Fallback
             user_type = 'Guest'
             points = 0
@@ -225,10 +230,16 @@ def profile():
                 else:
                     wins, losses, total_guesses, games_played = 0, 0, 0, 0
                     avg_guesses = 0.0
+                    # Ensure user exists in users before inserting into user_stats
+                    cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (ip_address,))
+                    if not cur.fetchone():
+                        username = generate_username(ip_address)
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
+                                  (ip_address, username, 'Guest', 0))
                     cur.execute('INSERT INTO user_stats (ip_address) VALUES (%s)', (ip_address,))
                     conn.commit()
     except psycopg.Error as e:
-        print(f"Database error fetching stats: {e}")
+        print(f"Database error fetching stats: {str(e)}")
         wins, losses, total_guesses, games_played = 0, 0, 0, 0
         avg_guesses = 0.0
 
@@ -258,7 +269,7 @@ def profile():
                 user_type = 'Member'
                 return render_template('profile.html', username=new_username, message="Username updated successfully!", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
             except psycopg.Error as e:
-                print(f"Database error updating username: {e.pgcode} - {e.pgerror}")  # More detailed error
+                print(f"Database error updating username: {str(e)}")  # Simplified error logging
                 return render_template('profile.html', username=session['username'], message=f"Error updating username: {str(e)}", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
         else:
             return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
@@ -363,7 +374,7 @@ def guess():
                     ''', (request.remote_addr, win, 1-win, len(session['guesses']), win, 1-win, len(session['guesses'])))
                     conn.commit()
         except psycopg.Error as e:
-            print(f"Database logging error: {e}")
+            print(f"Database logging error: {str(e)}")
 
     # Generate shareable result
     share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
