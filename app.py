@@ -202,12 +202,13 @@ def profile():
                     else:
                         username = generate_username(ip_address)
                         session['username'] = username
-                        cur.execute('INSERT INTO users (ip_address, username) VALUES (%s, %s)', (ip_address, username))
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
+                                  (ip_address, username, 'Guest', 0))
                         conn.commit()
                         user_type = 'Guest'
                         points = 0
         except psycopg.Error as e:
-            print(f"Database error in profile: {e}")
+            print(f"Database error initializing user: {e}")
             session['username'] = generate_username(ip_address)  # Fallback
             user_type = 'Guest'
             points = 0
@@ -245,14 +246,20 @@ def profile():
             try:
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
-                        cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s', (new_username, 'Member', ip_address))
+                        cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (ip_address,))
+                        if not cur.fetchone():
+                            username = generate_username(ip_address)
+                            cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
+                                      (ip_address, username, 'Guest', 0))
+                        cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s', 
+                                  (new_username, 'Member', ip_address))
                         conn.commit()
                 session['username'] = new_username
                 user_type = 'Member'
                 return render_template('profile.html', username=new_username, message="Username updated successfully!", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
             except psycopg.Error as e:
-                print(f"Database error updating username: {e}")
-                return render_template('profile.html', username=session['username'], message="Error updating username.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+                print(f"Database error updating username: {e.pgcode} - {e.pgerror}")  # More detailed error
+                return render_template('profile.html', username=session['username'], message=f"Error updating username: {str(e)}", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
         else:
             return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
 
