@@ -39,16 +39,17 @@ def init_db():
                         guesses INTEGER
                     )
                 ''')
-                # Ensure users table exists and add missing columns if needed
+                # Ensure users table exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         ip_address TEXT PRIMARY KEY,
                         username TEXT,
-                        password TEXT,
                         user_type TEXT DEFAULT 'Guest'
                     )
                 ''')
+                # Add missing columns if they don't exist
                 cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0')
+                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT')
                 # Ensure user_stats table exists with foreign key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
@@ -265,17 +266,21 @@ def profile():
                         with conn.cursor() as cur:
                             hashed_password = hash_password(password)
                             print(f"Attempting login for {username} with hashed password: {hashed_password}")  # Debug
-                            cur.execute('SELECT user_type, points FROM users WHERE username = %s AND password = %s', 
-                                      (username, hashed_password))
+                            cur.execute('SELECT user_type, points, password FROM users WHERE username = %s', (username,))
                             result = cur.fetchone()
                             if result:
-                                user_type, points = result
-                                session['username'] = username
-                                cur.execute('UPDATE users SET ip_address = %s WHERE username = %s', (ip_address, username))
-                                conn.commit()
-                                return redirect(url_for('profile'))
+                                stored_user_type, stored_points, stored_password = result
+                                print(f"Database entry: user_type={stored_user_type}, points={stored_points}, password={stored_password}")  # Debug
+                                if stored_password == hashed_password:
+                                    session['username'] = username
+                                    cur.execute('UPDATE users SET ip_address = %s WHERE username = %s', (ip_address, username))
+                                    conn.commit()
+                                    return redirect(url_for('profile'))
+                                else:
+                                    print(f"Login failed for {username}: Password mismatch")  # Debug
+                                    return render_template('profile.html', username=session['username'], message="Invalid username or password.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
                             else:
-                                print(f"Login failed for {username}: No match found")  # Debug
+                                print(f"Login failed for {username}: User not found")  # Debug
                                 return render_template('profile.html', username=session['username'], message="Invalid username or password.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
                 except psycopg.Error as e:
                     print(f"Database error during login: {str(e)}")
