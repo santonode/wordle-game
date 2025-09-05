@@ -1,16 +1,50 @@
-/* styles.css */
 body {
     font-family: Arial, sans-serif;
-    margin: 20px;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
 }
 
-input[type="text"],
-input[type="password"] {
-    width: 50%; /* Reduce width by 50% of the default (assuming default is 100% of container) */
+/* Game board styles - preserve existing layout */
+.game-board {
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto; /* Center on all screens */
+}
+
+/* Guess display styles - ensure horizontal layout with colors */
+.guess-row {
+    display: flex;
+    justify-content: center;
+    margin: 5px 0;
+}
+
+.guess-letter {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    margin: 0 2px;
+    text-align: center;
+    border: 2px solid #ccc;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.green { background-color: #6aaa64; color: white; }
+.yellow { background-color: #c9b458; color: white; }
+.gray { background-color: #787c7e; color: white; }
+
+/* Profile-specific input styles */
+.profile-form input[type="text"],
+.profile-form input[type="password"] {
+    width: 50%;
     padding: 5px;
     margin: 5px 0;
     border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box;
 }
 
 button {
@@ -34,4 +68,21 @@ label {
 
 form {
     margin-bottom: 20px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 600px) {
+    .game-board {
+        padding: 0 10px;
+    }
+    .profile-form input[type="text"],
+    .profile-form input[type="password"] {
+        width: 80%; /* Wider inputs on mobile for usability */
+    }
+    .guess-letter {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 14px;
+    }
 }
