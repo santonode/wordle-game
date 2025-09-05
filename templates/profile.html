@@ -87,23 +87,32 @@
         .form-group label {
             margin-bottom: 5px;
             font-weight: bold;
+            text-align: center; /* Center the label text */
+            width: 150px; /* Fixed width for label to control offset */
+            margin-right: auto; /* Shift label to the left of centered inputs */
+            margin-left: 20px; /* Additional left offset for visual separation */
+        }
+        .form-group .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .form-group input {
             padding: 5px;
             font-size: 16px;
-            margin-right: 10px;
             width: 200px; /* Fixed width to control size */
             box-sizing: border-box;
+            margin-bottom: 5px; /* Space between inputs */
         }
         .form-group button {
             padding: 5px 10px;
             font-size: 16px;
-            margin-top: 5px;
             background-color: #26A69A;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            width: 200px; /* Match input width */
         }
         .form-group button:hover {
             background-color: #1e7d71;
@@ -117,6 +126,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            width: 200px; /* Match input width */
         }
         .clear-session-btn:hover {
             background-color: #CC0000;
@@ -149,11 +159,24 @@
             .content {
                 padding: 0 10px; /* Prevent edge clipping */
             }
+            .form-group label {
+                width: 100%; /* Full width on mobile */
+                max-width: 150px; /* Limit max width */
+                margin-left: 0; /* Remove offset on mobile for simplicity */
+                text-align: center; /* Ensure centered on mobile */
+            }
+            .form-group .input-container {
+                width: 100%;
+            }
             .form-group input {
                 width: 100%; /* Full width on mobile */
                 max-width: 250px; /* Limit max width */
             }
             .form-group button {
+                width: 100%;
+                max-width: 150px;
+            }
+            .clear-session-btn {
                 width: 100%;
                 max-width: 150px;
             }
@@ -171,15 +194,21 @@
         <!-- Existing Update Username Form -->
         <div class="form-group">
             <form method="POST">
-                <input type="text" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required>
-                <button type="submit">Update Username</button>
+                <label for="update-username">Update Username</label>
+                <div class="input-container">
+                    <input type="text" id="update-username" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required>
+                    <button type="submit">Update Username</button>
+                </div>
             </form>
         </div>
 
         <!-- Existing Clear Session Button -->
         <div class="form-group">
             <form method="POST">
-                <button type="submit" name="clear_session" class="clear-session-btn">Clear Session</button>
+                <label for="clear-session">Clear Session</label>
+                <div class="input-container">
+                    <button type="submit" id="clear-session" name="clear_session" class="clear-session-btn">Clear Session</button>
+                </div>
             </form>
         </div>
 
@@ -187,9 +216,11 @@
         <div class="form-group">
             <form method="POST">
                 <label for="register-username">Register New User</label>
-                <input type="text" id="register-username" name="register_username" placeholder="New username" required>
-                <input type="password" id="register-password" name="register_password" placeholder="New password" required>
-                <button type="submit" name="register">Register</button>
+                <div class="input-container">
+                    <input type="text" id="register-username" name="register_username" placeholder="New username" required>
+                    <input type="password" id="register-password" name="register_password" placeholder="New password" required>
+                    <button type="submit" name="register">Register</button>
+                </div>
             </form>
         </div>
 
@@ -197,9 +228,11 @@
         <div class="form-group">
             <form method="POST">
                 <label for="login-username">Login</label>
-                <input type="text" id="login-username" name="login_username" placeholder="Username" required>
-                <input type="password" id="login-password" name="login_password" placeholder="Password" required>
-                <button type="submit" name="login">Login</button>
+                <div class="input-container">
+                    <input type="text" id="login-username" name="login_username" placeholder="Username" required>
+                    <input type="password" id="login-password" name="login_password" placeholder="Password" required>
+                    <button type="submit" name="login">Login</button>
+                </div>
             </form>
         </div>
 
