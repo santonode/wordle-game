@@ -71,7 +71,7 @@
             min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
             padding-top: 5px; /* Additional padding to push content down */
             text-align: center;
-            padding-bottom: 60px; /* Added space for button and future content */
+            padding-bottom: 120px; /* Increased space for stats, button, and future content */
         }
         .username {
             font-size: 24px;
@@ -80,18 +80,11 @@
         }
         .customize-form {
             margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
         }
         .customize-form input {
-            width: 50%; /* Reduced width by 50% as requested */
             padding: 5px;
             font-size: 16px;
             margin-right: 10px;
-            box-sizing: border-box; /* Include padding in width */
-            max-width: 200px; /* Prevent overly narrow inputs on small screens */
         }
         .customize-form button {
             padding: 5px 10px;
@@ -132,24 +125,21 @@
         .back-button:hover {
             background-color: #1e7d71;
         }
-
-        /* Mobile-specific adjustments */
-        @media (max-width: 600px) {
-            .content {
-                padding: 0 10px; /* Prevent edge clipping */
-            }
-            .customize-form input {
-                width: 80%; /* Wider inputs on mobile for usability */
-                margin-right: 0;
-                margin-bottom: 10px;
-            }
-            .customize-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .customize-form button {
-                width: 80%;
-            }
+        .stats-container {
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .stat-item {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #263238;
+        }
+        .stat-item strong {
+            color: #26A69A;
         }
     </style>
 </head>
@@ -170,6 +160,15 @@
         {% if message %}
             <div class="message">{{ message }}</div>
         {% endif %}
+        <div class="stats-container">
+            <div class="stat-item"><strong>Wins:</strong> {{ wins }}</div>
+            <div class="stat-item"><strong>Losses:</strong> {{ losses }}</div>
+            <div class="stat-item"><strong>Average Guesses:</strong> {{ "%.1f" | format(avg_guesses) }}</div>
+            <div class="stat-item"><strong>User Type:</strong> {{ user_type }}</div>
+            <div class="stat-item"><strong>Points:</strong> {{ points }}</div>
+        </div>
+        <!-- Debug output (remove in production) -->
+        <p>Debug: wins={{ wins }}, losses={{ losses }}, avg_guesses={{ avg_guesses }}, user_type={{ user_type }}, points={{ points }}</p>
     </div>
     <a href="/" class="back-button">Back to Game</a>
     <div class="footer">
