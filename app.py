@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 from datetime import date, datetime
 import os
@@ -39,16 +39,16 @@ def init_db():
                         guesses INTEGER
                     )
                 ''')
-                # Ensure users table exists and add missing columns if needed
+                # Ensure users table exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         ip_address TEXT PRIMARY KEY,
-                        username TEXT NOT NULL
+                        username TEXT,
+                        user_type TEXT DEFAULT 'Guest',
+                        points INTEGER DEFAULT 0,
+                        password TEXT
                     )
                 ''')
-                # Add user_type and points columns if they don't exist
-                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type TEXT DEFAULT \'Guest\'')
-                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0')
                 # Ensure user_stats table exists with foreign key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
@@ -107,9 +107,12 @@ def generate_username(ip_address):
     seed = f"{ip_address}{datetime.now().microsecond}{random.randint(1000, 9999)}"
     hash_object = hashlib.md5(seed.encode())
     hash_hex = hash_object.hexdigest()[:8]  # Take first 8 characters for brevity
-    # Convert to alphanumeric by mapping to base36 and filtering
     username = ''.join(c for c in hash_hex if c.isalnum()).upper()[:12]
     return username
+
+# Hash password for storage
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Initialize database on app startup
 init_db()
@@ -196,8 +199,8 @@ def stats():
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     ip_address = request.remote_addr
-    user_type = 'Guest'  # Default initialization
-    points = 0  # Default initialization
+    user_type = 'Guest'
+    points = 0
     if 'username' not in session or not session.get('username'):
         try:
             with psycopg.connect(DATABASE_URL) as conn:
@@ -216,9 +219,8 @@ def profile():
                         points = 0
         except psycopg.Error as e:
             print(f"Database error initializing user: {str(e)}")
-            session['username'] = generate_username(ip_address)  # Fallback
+            session['username'] = generate_username(ip_address)
 
-    # Fetch user stats from user_stats table
     wins = 0
     losses = 0
     total_guesses = 0
@@ -244,6 +246,7 @@ def profile():
     except psycopg.Error as e:
         print(f"Database error fetching stats: {str(e)}")
 
+    message = None
     if request.method == 'POST':
         if 'clear_session' in request.form:
             current_username = session.get('username')
@@ -252,30 +255,71 @@ def profile():
             session['guesses'] = []
             session['game_over'] = False
             session['hard_mode'] = False
-            return render_template('profile.html', username=session['username'], message="Session data cleared. Please return to the game.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
-        new_username = request.form.get('username', '').strip()
-        if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
-            try:
-                with psycopg.connect(DATABASE_URL) as conn:
-                    with conn.cursor() as cur:
-                        cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (ip_address,))
-                        if not cur.fetchone():
-                            username = generate_username(ip_address)
-                            cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                      (ip_address, username, 'Guest', 0))
-                        cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s', 
-                                  (new_username, 'Member', ip_address))
-                        conn.commit()
-                session['username'] = new_username
-                user_type = 'Member'
-                return render_template('profile.html', username=new_username, message="Username updated successfully!", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
-            except psycopg.Error as e:
-                print(f"Database error updating username: {str(e)}")
-                return render_template('profile.html', username=session['username'], message=f"Error updating username: {str(e)}", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+            message = "Session data cleared. Please return to the game."
+        elif 'login' in request.form:
+            username = request.form.get('login_username', '').strip()
+            password = request.form.get('login_password', '')
+            if username and password:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            hashed_password = hash_password(password)
+                            print(f"Attempting login for {username} with hashed password: {hashed_password}")
+                            cur.execute('SELECT user_type, points, password FROM users WHERE username = %s', (username,))
+                            result = cur.fetchone()
+                            if result:
+                                stored_user_type, stored_points, stored_password = result
+                                if stored_password == hashed_password:
+                                    session['username'] = username
+                                    cur.execute('UPDATE users SET ip_address = %s WHERE username = %s', (ip_address, username))
+                                    conn.commit()
+                                    message = "Login successful!"
+                                else:
+                                    message = "Invalid username or password."
+                            else:
+                                message = "Invalid username or password."
+                except psycopg.Error as e:
+                    print(f"Database error during login: {str(e)}")
+                    message = "Error during login."
+        elif 'register' in request.form:
+            new_username = request.form.get('register_username', '').strip()
+            new_password = request.form.get('register_password', '')
+            if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
+                            if cur.fetchone():
+                                message = "Username already taken."
+                            else:
+                                cur.execute('INSERT INTO users (ip_address, username, password, user_type, points) VALUES (%s, %s, %s, %s, %s)', 
+                                          (ip_address, new_username, hash_password(new_password), 'Member', 0))
+                                conn.commit()
+                                session['username'] = new_username
+                                user_type = 'Member'
+                                message = "Registration successful! You are now a Member."
+                except psycopg.Error as e:
+                    print(f"Database error during registration: {str(e)}")
+                    message = "Error during registration."
         else:
-            return render_template('profile.html', username=session['username'], message="Username must be 1-12 alphanumeric characters.", wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+            new_username = request.form.get('username', '').strip()
+            if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s', 
+                                      (new_username, 'Member', ip_address))
+                            conn.commit()
+                    session['username'] = new_username
+                    user_type = 'Member'
+                    message = "Username updated successfully!"
+                except psycopg.Error as e:
+                    print(f"Database error updating username: {str(e)}")
+                    message = f"Error updating username: {str(e)}"
+            else:
+                message = "Username must be 1-12 alphanumeric characters."
 
-    return render_template('profile.html', username=session['username'], wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+    return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
 
 @app.route('/guess', methods=['POST'])
 def guess():
