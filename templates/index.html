@@ -5,223 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wurdle</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-        .header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #263238;
-            color: white;
-            padding: 5px 0;
-            text-align: center;
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            border-bottom: 2px solid #000000;
-            height: 45px;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-radius: 10px;
-            display: inline-block;
-            padding: 5px 10px;
-            background: linear-gradient(45deg, #26A69A, #FFCA28);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .header .gear-icon {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            font-size: 16px;
-            text-decoration: none;
-            color: white;
-            background-color: #000000;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #263238;
-            color: white;
-            padding: 5px 0;
-            text-align: center;
-            z-index: 1000;
-            border-top: 2px solid #000000;
-            height: 35px;
-            box-sizing: border-box;
-        }
-        .footer p {
-            margin: 3px 0;
-            font-size: 12px;
-        }
-        .content {
-            margin-top: 50px;
-            margin-bottom: 40px;
-            min-height: calc(100vh - 85px);
-            padding-top: 5px;
-        }
-        #input-area {
-            margin: 20px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #input-area .input-row {
-            margin-bottom: 10px;
-        }
-        #input-area .link-row {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-    </style>
 </head>
 <body>
-    <div class="header">
+    <div class="game-board">
         <h1>Wurdle</h1>
-        <a href="/profile" class="gear-icon">⚙️</a>
-    </div>
-    <div class="content">
         {% if game_blocked %}
-            <p id="blocked-message">{{ message }}</p>
-            <a href="/wordlist">View Word List</a>
-            <a href="/stats">View Stats</a>
+            <p>{{ message }}</p>
         {% else %}
-            <div id="game-board"></div>
-            <div id="input-area">
-                <div class="input-row">
-                    <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" style="width: 150px; padding: 5px; font-size: 16px;" oninput="this.value = this.value.toUpperCase().slice(0, 5);">
-                    <button onclick="submitGuess()">Submit</button>
-                </div>
-                <div class="link-row">
-                    <a href="/wordlist">View Word List</a>
-                    <a href="/stats">View Stats</a>
-                </div>
+            <div>
+                <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" autocomplete="off">
+                <button onclick="submitGuess()">Submit</button>
+                <button onclick="toggleHardMode()">Toggle Hard Mode</button>
             </div>
+            <div id="guesses"></div>
             <p id="message"></p>
-            <div style="text-align: center; margin: 10px 0;">
-                <a href="#" onclick="copyShareText(); return false;" style="margin-bottom: 5px;">Share Results</a>
-            </div>
-            <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
-                {% if share_text %}
-                    {{ share_text }} wurdle.santoelectronics.com
-                {% endif %}
-            </textarea>
         {% endif %}
-    </div>
-    <div class="footer">
-        <p>Made with ❤️ by Wurdle Team</p>
-        <p>Play Now and Share with Friends!</p>
     </div>
 
     <script>
-        let guesses = [];
-        let gameOver = false;
+        let hardMode = false;
 
-        async function submitGuess() {
-            const input = document.getElementById('guess-input')?.value.toUpperCase();
-            if (!input || input.length !== 5) {
-                alert('Please enter a 5-letter word.');
-                return;
-            }
-
-            const response = await fetch('/guess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess: input })
-            });
-            const data = await response.json();
-            console.log('Server response:', data); // Debug log
-
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            guesses.push({ guess: data.guess, result: data.result });
-            renderBoard();
-            document.getElementById('guess-input').value = '';
-
-            if (data.game_over) {
-                gameOver = true;
-                if (data.share_text) {
-                    document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
-                } else {
-                    console.log('No share_text received:', data);
-                }
-            }
-            if (data.message) {
-                document.getElementById('message').textContent = data.message;
-            }
-        }
-
-        function renderBoard() {
-            const board = document.getElementById('game-board');
-            if (!board) return;
-            board.innerHTML = '';
-            guesses.forEach(g => {
-                const row = document.createElement('div');
-                row.className = 'row';
-                for (let i = 0; i < 5; i++) {
-                    const tile = document.createElement('div');
-                    tile.className = `tile ${g.result[i] === 'green' ? 'teal' : g.result[i] === 'yellow' ? 'yellow' : 'red'}`;
-                    tile.textContent = g.guess[i];
-                    row.appendChild(tile);
-                }
-                board.appendChild(row);
-            });
-        }
-
-        function copyShareText() {
-            const shareText = document.getElementById('share-text');
-            if (!shareText) return;
-            shareText.select();
-            document.execCommand('copy');
-            alert('Results copied to clipboard!');
-        }
-
-        document.getElementById('guess-input')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitGuess();
-        });
-
-        // Initial load of existing guesses
-        window.onload = () => {
-            fetch('/guess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess: '' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Initial load response:', data); // Debug log
-                if (data.guesses) {
-                    guesses = data.guesses;
-                    renderBoard();
-                }
-                if (data.game_over) {
-                    gameOver = true;
-                    if (data.share_text) {
-                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+        function submitGuess() {
+            const guess = document.getElementById('guess-input').value.toUpperCase();
+            if (guess.length === 5) {
+                fetch('/guess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ guess: guess })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('message').textContent = data.error;
                     } else {
-                        console.log('No share_text on initial load:', data);
+                        displayGuess(data.guess, data.result);
+                        document.getElementById('message').textContent = data.message || '';
+                        document.getElementById('guess-input').value = '';
+                        if (data.game_over) {
+                            navigator.clipboard.writeText(data.share_text).then(() => {
+                                alert('Game over! Share text copied to clipboard.');
+                            });
+                        }
                     }
-                }
-                if (data.message) {
-                    document.getElementById('message').textContent = data.message;
-                }
-            });
-        };
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+                document.getElementById('message').textContent = 'Please enter a 5-letter word.';
+            }
+        }
+
+        function displayGuess(guess, result) {
+            const guessesDiv = document.getElementById('guesses');
+            const row = document.createElement('div');
+            row.className = 'guess-row';
+            for (let i = 0; i < 5; i++) {
+                const letter = document.createElement('div');
+                letter.className = 'guess-letter ' + result[i]; // Apply color class
+                letter.textContent = guess[i] || ''; // Handle incomplete guesses
+                row.appendChild(letter);
+            }
+            guessesDiv.appendChild(row);
+        }
+
+        function toggleHardMode() {
+            fetch('/toggle_hard_mode', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    hardMode = data.hard_mode;
+                    document.getElementById('message').textContent = `Hard Mode: ${hardMode ? 'On' : 'Off'}`;
+                });
+        }
+
+        // Clear input on Enter key
+        document.getElementById('guess-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitGuess();
+            }
+        });
     </script>
 </body>
 </html>
