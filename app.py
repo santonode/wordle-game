@@ -12,10 +12,11 @@ import psycopg  # Updated to psycopg3
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# Get database URL from environment, no fallback to avoid local SQLite confusion
+# Get database URL and admin password from environment
 DATABASE_URL = os.environ.get('DATABASE_URL')
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+ADMIN_PASS = os.environ.get('ADMIN_PASS')
+if not DATABASE_URL or not ADMIN_PASS:
+    raise ValueError("DATABASE_URL and ADMIN_PASS environment variables must be set")
 
 # Initialize Postgres database
 def init_db():
@@ -320,6 +321,33 @@ def profile():
                 message = "Username must be 1-12 alphanumeric characters."
 
     return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    message = None
+    authenticated = session.get('admin_authenticated', False)
+
+    if request.method == 'POST':
+        admin_pass = request.form.get('admin_pass', '')
+        if admin_pass == ADMIN_PASS:
+            session['admin_authenticated'] = True
+            authenticated = True
+        else:
+            message = "Incorrect admin password."
+
+    if not authenticated:
+        return render_template('admin.html', authenticated=False, message=message)
+
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT username, password FROM users')
+                users = [{'username': row[0], 'password': row[1]} for row in cur.fetchall()]
+        return render_template('admin.html', authenticated=True, users=users, message=message)
+    except psycopg.Error as e:
+        print(f"Database error in admin: {str(e)}")
+        message = "Error fetching user data."
+        return render_template('admin.html', authenticated=True, users=[], message=message)
 
 @app.route('/guess', methods=['POST'])
 def guess():
