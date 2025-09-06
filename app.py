@@ -36,29 +36,31 @@ def init_db():
                         id SERIAL PRIMARY KEY,
                         timestamp TIMESTAMP,
                         ip_address TEXT,
+                        username TEXT,
                         win INTEGER,
                         guesses INTEGER
                     )
                 ''')
-                # Ensure users table exists
+                # Ensure users table exists with id as primary key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
-                        ip_address TEXT PRIMARY KEY,
-                        username TEXT,
+                        id SERIAL PRIMARY KEY,
+                        ip_address TEXT,
+                        username TEXT UNIQUE,
                         user_type TEXT DEFAULT 'Guest',
                         points INTEGER DEFAULT 0,
                         password TEXT
                     )
                 ''')
-                # Ensure user_stats table exists with foreign key and ON DELETE CASCADE
+                # Ensure user_stats table exists with foreign key on id
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
-                        ip_address TEXT PRIMARY KEY,
+                        user_id INTEGER PRIMARY KEY,
                         wins INTEGER DEFAULT 0,
                         losses INTEGER DEFAULT 0,
                         total_guesses INTEGER DEFAULT 0,
                         games_played INTEGER DEFAULT 0,
-                        FOREIGN KEY (ip_address) REFERENCES users(ip_address) ON DELETE CASCADE
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                     )
                 ''')
                 conn.commit()
@@ -128,6 +130,7 @@ def handle_exception(e):
 def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
+    username = session.get('username')
     
     # Clear session if no guesses or new day
     if not session.get('guesses') or (last_played and last_played != today):
@@ -137,9 +140,9 @@ def index():
         session['hard_mode'] = False
         session['last_played_date'] = today if not last_played else None
 
-    # Block only if the game was completed today
-    if session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Come back tomorrow for a new one!")
+    # Block only if the game was completed today for the current user
+    if username and session.get('last_played_date') == today and session.get('game_over', False):
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!")
     
     return render_template('index.html', game_blocked=False)
 
@@ -206,7 +209,7 @@ def profile():
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('SELECT username, user_type, points FROM users WHERE ip_address = %s', (ip_address,))
+                    cur.execute('SELECT username, user_type, points FROM users WHERE ip_address = %s LIMIT 1', (ip_address,))
                     result = cur.fetchone()
                     if result:
                         session['username'], user_type, points = result
@@ -215,6 +218,7 @@ def profile():
                         session['username'] = username
                         cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
                                   (ip_address, username, 'Guest', 0))
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                         conn.commit()
                         user_type = 'Guest'
                         points = 0
@@ -230,19 +234,15 @@ def profile():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE ip_address = %s', (ip_address,))
+                cur.execute('SELECT id FROM users WHERE username = %s', (session['username'],))
+                user_id = cur.fetchone()[0]
+                cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
                 stats = cur.fetchone()
                 if stats:
                     wins, losses, total_guesses, games_played = stats
                     avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
                 else:
-                    # Ensure user exists in users before inserting into user_stats
-                    cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (ip_address,))
-                    if not cur.fetchone():
-                        username = generate_username(ip_address)
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                  (ip_address, username, 'Guest', 0))
-                    cur.execute('INSERT INTO user_stats (ip_address) VALUES (%s)', (ip_address,))
+                    cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
                     conn.commit()
     except psycopg.Error as e:
         print(f"Database error fetching stats: {str(e)}")
@@ -272,8 +272,6 @@ def profile():
                                 stored_user_type, stored_points, stored_password = result
                                 if stored_password == hashed_password:
                                     session['username'] = username
-                                    cur.execute('UPDATE users SET ip_address = %s WHERE username = %s', (ip_address, username))
-                                    conn.commit()
                                     message = "Login successful!"
                                 else:
                                     message = "Invalid username or password."
@@ -289,23 +287,13 @@ def profile():
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
-                            # Check if user exists for this ip_address
-                            cur.execute('SELECT user_type, username FROM users WHERE ip_address = %s', (ip_address,))
-                            existing_user = cur.fetchone()
-                            if existing_user:
-                                if existing_user[0] == 'Guest':
-                                    # Update existing guest user to member
-                                    cur.execute('UPDATE users SET username = %s, password = %s, user_type = %s WHERE ip_address = %s',
-                                              (new_username, hash_password(new_password), 'Member', ip_address))
-                                    session['username'] = new_username
-                                    user_type = 'Member'
-                                    message = "Registration successful! Upgraded to Member."
-                                else:
-                                    message = "A registered user already exists for this IP. Please login or use a different IP."
+                            cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
+                            if cur.fetchone():
+                                message = "Username already taken."
                             else:
-                                # Insert new user if no existing record
                                 cur.execute('INSERT INTO users (ip_address, username, password, user_type, points) VALUES (%s, %s, %s, %s, %s)', 
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0))
+                                cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
                                 session['username'] = new_username
                                 user_type = 'Member'
@@ -319,12 +307,15 @@ def profile():
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
-                            cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s', 
-                                      (new_username, 'Member', ip_address))
-                            conn.commit()
-                    session['username'] = new_username
-                    user_type = 'Member'
-                    message = "Username updated successfully!"
+                            cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s AND username = %s', 
+                                      (new_username, 'Member', ip_address, session['username']))
+                            if cur.rowcount > 0:
+                                session['username'] = new_username
+                                user_type = 'Member'
+                                message = "Username updated successfully!"
+                            else:
+                                message = "No user found to update with this IP and username."
+                        conn.commit()
                 except psycopg.Error as e:
                     print(f"Database error updating username: {str(e)}")
                     message = f"Error updating username: {str(e)}"
@@ -351,15 +342,10 @@ def admin():
             try:
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
-                        # Fetch the ip_address for the user to be deleted
-                        cur.execute('SELECT ip_address FROM users WHERE username = %s', (delete_username,))
-                        ip_address = cur.fetchone()
-                        if ip_address:
-                            ip_address = ip_address[0]
-                            # Delete from user_stats first (though CASCADE should handle this)
-                            cur.execute('DELETE FROM user_stats WHERE ip_address = %s', (ip_address,))
-                            # Then delete from users
-                            cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
+                        cur.execute('DELETE FROM users WHERE username = %s RETURNING id', (delete_username,))
+                        user_id = cur.fetchone()
+                        if user_id:
+                            cur.execute('DELETE FROM user_stats WHERE user_id = %s', (user_id[0],))
                             conn.commit()
                             message = f"User {delete_username} deleted successfully."
                         else:
@@ -379,13 +365,8 @@ def admin():
                             if cur.fetchone():
                                 message = "Username already taken."
                             else:
-                                # Fetch the current ip_address
-                                cur.execute('SELECT ip_address FROM users WHERE username = %s', (edit_username,))
-                                current_ip = cur.fetchone()[0]
-                                # Update the user record
                                 cur.execute('UPDATE users SET username = %s, password = %s WHERE username = %s',
                                           (new_username, hash_password(new_password), edit_username))
-                                # Update user_stats if the ip_address needs to change (though typically it shouldn't)
                                 conn.commit()
                                 message = f"User {edit_username} updated to {new_username} successfully."
                 except psycopg.Error as e:
@@ -412,8 +393,9 @@ def admin():
 def guess():
     today = str(date.today())
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
-    if session.get('last_played_date') == today and session.get('game_over', False):
-        return jsonify({'error': 'You have already played today. Come back tomorrow!'})
+    username = session.get('username')
+    if username and session.get('last_played_date') == today and session.get('game_over', False):
+        return jsonify({'error': 'You have already played today. Use \'Clear Session\' to test again!'})
 
     if session.get('game_over'):
         return jsonify({'error': 'Game is over. Start a new game.'})
@@ -490,26 +472,21 @@ def guess():
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
+                    cur.execute('SELECT id FROM users WHERE username = %s', (username,))
+                    user_id = cur.fetchone()[0]
                     cur.execute('''
-                        INSERT INTO game_logs (timestamp, ip_address, win, guesses)
-                        VALUES (%s, %s, %s, %s)
-                    ''', (datetime.now(), request.remote_addr, win, len(session['guesses'])))
-                    # Ensure user exists in users before updating user_stats
-                    cur.execute('SELECT 1 FROM users WHERE ip_address = %s', (request.remote_addr,))
-                    if not cur.fetchone():
-                        username = generate_username(request.remote_addr)
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                  (request.remote_addr, username, 'Guest', 0))
-                    # Update user_stats
+                        INSERT INTO game_logs (timestamp, ip_address, username, win, guesses)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
                     cur.execute('''
-                        INSERT INTO user_stats (ip_address, wins, losses, total_guesses, games_played)
+                        INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
                         VALUES (%s, %s, %s, %s, 1)
-                        ON CONFLICT (ip_address) DO UPDATE
+                        ON CONFLICT (user_id) DO UPDATE
                         SET wins = user_stats.wins + %s,
                             losses = user_stats.losses + %s,
                             total_guesses = user_stats.total_guesses + %s,
                             games_played = user_stats.games_played + 1
-                    ''', (request.remote_addr, win, 1-win, len(session['guesses']), win, 1-win, len(session['guesses'])))
+                    ''', (user_id, win, 1-win, len(session['guesses']), win, 1-win, len(session['guesses'])))
                     conn.commit()
         except psycopg.Error as e:
             print(f"Database logging error: {str(e)}")
