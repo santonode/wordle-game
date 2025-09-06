@@ -1,170 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wurdle - Stats</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        .header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #263238; /* Navy */
-            color: white;
-            padding: 5px 0; /* Reduced padding */
-            text-align: center;
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            border-bottom: 2px solid #000000; /* Black border */
-            height: 45px; /* Fixed height to match content push */
-            box-sizing: border-box; /* Include padding in height */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 28px; /* Reduced font size */
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-radius: 10px;
-            display: inline-block;
-            padding: 5px 10px; /* Reduced padding */
-            background: linear-gradient(45deg, #26A69A, #FFCA28); /* Teal to Yellow gradient */
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .header .gear-icon {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            font-size: 16px; /* Reduced to ~50% of 24px */
-            text-decoration: none;
-            color: white;
-            background-color: #000000; /* Black background */
-            padding: 2px 4px; /* Padding for background */
-            border-radius: 4px; /* Rounded corners */
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #263238; /* Navy */
-            color: white;
-            padding: 5px 0; /* Reduced padding */
-            text-align: center;
-            z-index: 1000;
-            border-top: 2px solid #000000; /* Black border */
-            height: 35px; /* Fixed height to match content push */
-            box-sizing: border-box; /* Include padding in height */
-        }
-        .footer p {
-            margin: 3px 0;
-            font-size: 12px; /* Reduced font size */
-        }
-        .content {
-            margin-top: 50px; /* Increased to ensure clearance */
-            margin-bottom: 40px; /* Adjusted for footer */
-            min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
-            padding-top: 5px; /* Additional padding to push content down */
-            text-align: center;
-            padding-bottom: 60px; /* Added space for button and future content */
-        }
-        .chart-container {
-            margin-top: 20px;
-            max-width: 900px; /* Limit chart width */
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .chart-container img {
-            width: 100%; /* Ensure image fits within 900px container */
-            height: auto;
-        }
-        .table-container {
-            margin-top: 20px;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-            overflow-x: auto;
-        }
-        .table-container table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #f9f9f9;
-        }
-        .table-container th, .table-container td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        .table-container th {
-            background-color: #263238;
-            color: white;
-        }
-        .back-button {
-            position: absolute;
-            bottom: 60px; /* Position above footer with space */
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #26A69A;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .back-button:hover {
-            background-color: #1e7d71;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Wurdle</h1>
-        <a href="/profile" class="gear-icon">⚙️</a>
-    </div>
-    <div class="content">
-        <h2>Game Statistics</h2>
-        <div class="chart-container">
-            {% if chart %}
-                <img src="data:image/png;base64,{{ chart }}" alt="Stats Chart">
-            {% else %}
-                <p>No statistics available yet.</p>
-            {% endif %}
-        </div>
-        {% if table_data %}
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Wins</th>
-                            <th>Losses</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in table_data %}
-                            <tr>
-                                <td>{{ row[0] }}</td>
-                                <td>{{ row[1] }}</td>
-                                <td>{{ row[2] }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="content">
+    <h2>Game Statistics</h2>
+    <div class="chart-container">
+        {% if chart %}
+            <img src="data:image/png;base64,{{ chart }}" alt="Stats Chart">
+        {% else %}
+            <p>No statistics available yet.{% if error %} Error: {{ error }}{% endif %}</p>
         {% endif %}
     </div>
-    <a href="/" class="back-button">Back to Game</a>
-    <div class="footer">
-        <p>Made with ❤️ by Wurdle Team</p>
-        <p>Play Now and Share with Friends!</p>
-    </div>
-</body>
-</html>
+    {% if table_data %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_data %}
+                        <tr>
+                            <td>{{ row[0] }}</td>
+                            <td>{{ row[1] }}</td>
+                            <td>{{ row[2] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
