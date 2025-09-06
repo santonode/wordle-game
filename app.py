@@ -482,10 +482,10 @@ def guess():
                         INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
                         VALUES (%s, %s, %s, %s, 1)
                         ON CONFLICT (user_id) DO UPDATE
-                        SET wins = user_stats.wins + %s,
-                            losses = user_stats.losses + %s,
-                            total_guesses = user_stats.total_guesses + %s,
-                            games_played = user_stats.games_played + 1
+                        SET wins = user_stats.wins + EXCLUDED.wins,
+                            losses = user_stats.losses + EXCLUDED.losses,
+                            total_guesses = user_stats.total_guesses + EXCLUDED.total_guesses,
+                            games_played = user_stats.games_played + EXCLUDED.games_played
                     ''', (user_id, win, 1-win, len(session['guesses']), win, 1-win, len(session['guesses'])))
                     conn.commit()
         except psycopg.Error as e:
