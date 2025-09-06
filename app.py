@@ -328,12 +328,45 @@ def admin():
     authenticated = session.get('admin_authenticated', False)
 
     if request.method == 'POST':
-        admin_pass = request.form.get('admin_pass', '')
-        if admin_pass == ADMIN_PASS:
-            session['admin_authenticated'] = True
-            authenticated = True
-        else:
-            message = "Incorrect admin password."
+        if 'admin_pass' in request.form:
+            admin_pass = request.form.get('admin_pass', '')
+            if admin_pass == ADMIN_PASS:
+                session['admin_authenticated'] = True
+                authenticated = True
+            else:
+                message = "Incorrect admin password."
+        elif 'delete' in request.form:
+            delete_username = request.form.get('delete_username')
+            try:
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
+                        conn.commit()
+                        message = f"User {delete_username} deleted successfully."
+            except psycopg.Error as e:
+                print(f"Database error during delete: {str(e)}")
+                message = f"Error deleting user {delete_username}."
+        elif 'save' in request.form:
+            edit_username = request.form.get('edit_username')
+            new_username = request.form.get('new_username').strip()
+            new_password = request.form.get('new_password')
+            if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute('SELECT 1 FROM users WHERE username = %s AND username != %s', (new_username, edit_username))
+                            if cur.fetchone():
+                                message = "Username already taken."
+                            else:
+                                cur.execute('UPDATE users SET username = %s, password = %s WHERE username = %s',
+                                          (new_username, hash_password(new_password), edit_username))
+                                conn.commit()
+                                message = f"User {edit_username} updated to {new_username} successfully."
+                except psycopg.Error as e:
+                    print(f"Database error during update: {str(e)}")
+                    message = f"Error updating user {edit_username}."
+            else:
+                message = "Username must be 1-12 alphanumeric characters."
 
     if not authenticated:
         return render_template('admin.html', authenticated=False, message=message)
