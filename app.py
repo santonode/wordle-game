@@ -338,22 +338,24 @@ def admin():
         elif 'delete' in request.form:
             delete_username = request.form.get('delete_username')
             try:
-                # First, find the ip_address associated with the username
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
+                        # Fetch the ip_address for the user to be deleted
                         cur.execute('SELECT ip_address FROM users WHERE username = %s', (delete_username,))
                         ip_address = cur.fetchone()
                         if ip_address:
                             ip_address = ip_address[0]
-                            cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
+                            # Delete from user_stats first (though CASCADE should handle this)
                             cur.execute('DELETE FROM user_stats WHERE ip_address = %s', (ip_address,))
+                            # Then delete from users
+                            cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
                             conn.commit()
                             message = f"User {delete_username} deleted successfully."
                         else:
                             message = f"User {delete_username} not found."
             except psycopg.Error as e:
                 print(f"Database error during delete: {str(e)}")
-                message = f"Error deleting user {delete_username}."
+                message = f"Error deleting user {delete_username}: {str(e)}"
         elif 'save' in request.form:
             edit_username = request.form.get('edit_username')
             new_username = request.form.get('new_username').strip()
@@ -366,13 +368,18 @@ def admin():
                             if cur.fetchone():
                                 message = "Username already taken."
                             else:
+                                # Fetch the current ip_address
+                                cur.execute('SELECT ip_address FROM users WHERE username = %s', (edit_username,))
+                                current_ip = cur.fetchone()[0]
+                                # Update the user record
                                 cur.execute('UPDATE users SET username = %s, password = %s WHERE username = %s',
                                           (new_username, hash_password(new_password), edit_username))
+                                # Update user_stats if the ip_address needs to change (though typically it shouldn't)
                                 conn.commit()
                                 message = f"User {edit_username} updated to {new_username} successfully."
                 except psycopg.Error as e:
                     print(f"Database error during update: {str(e)}")
-                    message = f"Error updating user {edit_username}."
+                    message = f"Error updating user {edit_username}: {str(e)}"
             else:
                 message = "Username must be 1-12 alphanumeric characters."
 
