@@ -50,7 +50,7 @@ def init_db():
                         password TEXT
                     )
                 ''')
-                # Ensure user_stats table exists with foreign key
+                # Ensure user_stats table exists with foreign key and ON DELETE CASCADE
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
                         ip_address TEXT PRIMARY KEY,
@@ -338,11 +338,19 @@ def admin():
         elif 'delete' in request.form:
             delete_username = request.form.get('delete_username')
             try:
+                # First, find the ip_address associated with the username
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
-                        cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
-                        conn.commit()
-                        message = f"User {delete_username} deleted successfully."
+                        cur.execute('SELECT ip_address FROM users WHERE username = %s', (delete_username,))
+                        ip_address = cur.fetchone()
+                        if ip_address:
+                            ip_address = ip_address[0]
+                            cur.execute('DELETE FROM users WHERE username = %s', (delete_username,))
+                            cur.execute('DELETE FROM user_stats WHERE ip_address = %s', (ip_address,))
+                            conn.commit()
+                            message = f"User {delete_username} deleted successfully."
+                        else:
+                            message = f"User {delete_username} not found."
             except psycopg.Error as e:
                 print(f"Database error during delete: {str(e)}")
                 message = f"Error deleting user {delete_username}."
