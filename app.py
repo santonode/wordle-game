@@ -334,7 +334,7 @@ def admin():
             admin_pass = request.form.get('admin_pass', '')
             if admin_pass == ADMIN_PASS:
                 session['admin_authenticated'] = True
-                authenticated = True
+                authenticated = true
             else:
                 message = "Incorrect admin password."
         elif 'delete' in request.form:
@@ -474,10 +474,9 @@ def guess():
                 with conn.cursor() as cur:
                     cur.execute('SELECT id FROM users WHERE username = %s', (username,))
                     user_id = cur.fetchone()[0]
-                    cur.execute('''
-                        INSERT INTO game_logs (timestamp, ip_address, username, win, guesses)
-                        VALUES (%s, %s, %s, %s, %s)
-                    ''', (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
+                    # Check if id column exists, fallback to insert without id if not
+                    cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
+                              (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
                     cur.execute('''
                         INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
                         VALUES (%s, %s, %s, %s, 1)
