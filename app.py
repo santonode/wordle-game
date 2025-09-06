@@ -289,10 +289,21 @@ def profile():
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
-                            cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
-                            if cur.fetchone():
-                                message = "Username already taken."
+                            # Check if user exists for this ip_address
+                            cur.execute('SELECT user_type, username FROM users WHERE ip_address = %s', (ip_address,))
+                            existing_user = cur.fetchone()
+                            if existing_user:
+                                if existing_user[0] == 'Guest':
+                                    # Update existing guest user to member
+                                    cur.execute('UPDATE users SET username = %s, password = %s, user_type = %s WHERE ip_address = %s',
+                                              (new_username, hash_password(new_password), 'Member', ip_address))
+                                    session['username'] = new_username
+                                    user_type = 'Member'
+                                    message = "Registration successful! Upgraded to Member."
+                                else:
+                                    message = "A registered user already exists for this IP. Please login or use a different IP."
                             else:
+                                # Insert new user if no existing record
                                 cur.execute('INSERT INTO users (ip_address, username, password, user_type, points) VALUES (%s, %s, %s, %s, %s)', 
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0))
                                 conn.commit()
