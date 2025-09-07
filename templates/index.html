@@ -170,13 +170,23 @@
             const board = document.getElementById('game-board');
             if (!board) return;
             board.innerHTML = '';
-            guesses.forEach(g => {
+            guesses.forEach((g, rowIndex) => {
                 const row = document.createElement('div');
                 row.className = 'row';
                 for (let i = 0; i < 5; i++) {
                     const tile = document.createElement('div');
-                    tile.className = `tile ${g.result[i] === 'green' ? 'teal' : g.result[i] === 'yellow' ? 'yellow' : 'red'}`;
+                    tile.className = 'tile';
                     tile.textContent = g.guess[i];
+                    // Debug log to verify result value
+                    console.log(`Row ${rowIndex}, Col ${i}: result[${i}] = ${g.result[i]}`);
+                    // Assign class based on result, default to gray if undefined
+                    if (g.result[i] === 'green') {
+                        tile.classList.add('green');
+                    } else if (g.result[i] === 'yellow') {
+                        tile.classList.add('yellow');
+                    } else {
+                        tile.classList.add('gray'); // Default to gray instead of red
+                    }
                     row.appendChild(tile);
                 }
                 board.appendChild(row);
