@@ -425,7 +425,7 @@ def guess():
                 return jsonify({'error': f'Hard Mode: Must use all known letters ({letter}).'})
 
     # Evaluate guess
-    result = []
+    result = ['gray'] * 5  # Initialize with 5 gray elements
     target_counts = {}
     for letter in target:
         target_counts[letter] = target_counts.get(letter, 0) + 1
@@ -435,22 +435,18 @@ def guess():
     all_green = True
     for i, (g, t) in enumerate(zip(guess, target)):
         if g == t:
-            result.append('green')
+            result[i] = 'green'
             guess_counts[g] = guess_counts.get(g, 0) + 1
         else:
-            result.append(None)
             all_green = False
     print(f"Debug - After first pass, result: {result}, all_green: {all_green}")  # Debug after first pass
 
-    # Second pass: Mark yellow and gray letters only if not all green
+    # Second pass: Mark yellow letters only if not all green
     if not all_green:
         for i, (g, t) in enumerate(zip(guess, target)):
-            if result[i] is None:
-                if g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
-                    result[i] = 'yellow'
-                    guess_counts[g] = guess_counts.get(g, 0) + 1
-                else:
-                    result[i] = 'gray'
+            if result[i] == 'gray' and g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
+                result[i] = 'yellow'
+                guess_counts[g] = guess_counts.get(g, 0) + 1
     print(f"Debug - After second pass, result: {result}")  # Debug after second pass
 
     session['guesses'].append({'guess': guess, 'result': result})
@@ -519,10 +515,10 @@ def guess():
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
         }[color] for color in g['result']) + '\n'
 
-    print(f"Debug - Guess result: {result}, game_over: {game_over}, message: {message}")  # Add debugging
+    print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}")  # Add debugging
     return jsonify({
         'guess': guess,
-        'result': result,
+        'result': result,  # Explicitly use the computed result
         'game_over': game_over,
         'message': message,
         'share_text': share_text
