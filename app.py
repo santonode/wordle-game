@@ -334,7 +334,7 @@ def admin():
             admin_pass = request.form.get('admin_pass', '')
             if admin_pass == ADMIN_PASS:
                 session['admin_authenticated'] = True
-                authenticated = True  # Fixed typo from 'true' to 'True'
+                authenticated = True
             else:
                 message = "Incorrect admin password."
         elif 'delete' in request.form:
@@ -404,6 +404,7 @@ def guess():
     print(f"Debug - Received guess: {guess}")  # Add debugging
     hard_mode = session.get('hard_mode', False)
     target = get_daily_word()
+    print(f"Debug - Target word: {target}")  # Add target for debugging
 
     if len(guess) != 5 or guess not in WORDS:
         print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in WORDS}")  # Add debugging
@@ -431,21 +432,26 @@ def guess():
     guess_counts = {}
 
     # First pass: Mark green letters
+    all_green = True
     for i, (g, t) in enumerate(zip(guess, target)):
         if g == t:
             result.append('green')
             guess_counts[g] = guess_counts.get(g, 0) + 1
         else:
             result.append(None)
+            all_green = False
+    print(f"Debug - After first pass, result: {result}, all_green: {all_green}")  # Debug after first pass
 
-    # Second pass: Mark yellow and gray letters
-    for i, (g, t) in enumerate(zip(guess, target)):
-        if result[i] is None:
-            if g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
-                result[i] = 'yellow'
-                guess_counts[g] = guess_counts.get(g, 0) + 1
-            else:
-                result[i] = 'gray'
+    # Second pass: Mark yellow and gray letters only if not all green
+    if not all_green:
+        for i, (g, t) in enumerate(zip(guess, target)):
+            if result[i] is None:
+                if g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
+                    result[i] = 'yellow'
+                    guess_counts[g] = guess_counts.get(g, 0) + 1
+                else:
+                    result[i] = 'gray'
+    print(f"Debug - After second pass, result: {result}")  # Debug after second pass
 
     session['guesses'].append({'guess': guess, 'result': result})
     session.modified = True
