@@ -31,21 +31,21 @@ main {
 }
 
 .tile.green { /* Correct letters in correct position (teal) */
-    background-color: #26A69A;
-    color: white;
-    border-color: #26A69A;
+    background-color: #26A69A !important;
+    color: white !important;
+    border-color: #26A69A !important;
 }
 
 .tile.yellow { /* Found letters not in correct position (yellow) */
-    background-color: #FFCA28;
-    color: black;
-    border-color: #FFCA28;
+    background-color: #FFCA28 !important;
+    color: black !important;
+    border-color: #FFCA28 !important;
 }
 
 .tile.gray { /* Not used letters (red) */
-    background-color: #EF5350;
-    color: white;
-    border-color: #EF5350;
+    background-color: #EF5350 !important;
+    color: white !important;
+    border-color: #EF5350 !important;
 }
 
 /* Word list styles */
