@@ -142,15 +142,19 @@
                 body: JSON.stringify({ guess: input })
             });
             const data = await response.json();
-            console.log('Server response:', data); // Debug log
+            console.log('Server response raw:', data); // Log raw response
 
             if (data.error) {
                 alert(data.error);
                 return;
             }
 
-            guesses.push({ guess: data.guess, result: [...data.result] }); // Create a copy to avoid reference issues
-            console.log('Updated guesses:', guesses); // Log after push
+            // Sanitize and validate result array
+            const sanitizedResult = Array.isArray(data.result) && data.result.length === 5
+                ? data.result.map(r => (r === 'green' || r === 'yellow' || r === 'gray' ? r : 'gray'))
+                : ['gray', 'gray', 'gray', 'gray', 'gray'];
+            guesses.push({ guess: data.guess, result: sanitizedResult });
+            console.log('Sanitized guesses:', guesses); // Log after sanitization
             renderBoard();
             document.getElementById('guess-input').value = '';
 
@@ -218,7 +222,12 @@
             .then(data => {
                 console.log('Initial load response:', data); // Debug log
                 if (data.guesses) {
-                    guesses = data.guesses.map(g => ({ guess: g.guess, result: [...g.result] })); // Copy arrays
+                    guesses = data.guesses.map(g => ({
+                        guess: g.guess,
+                        result: Array.isArray(g.result) && g.result.length === 5
+                            ? g.result.map(r => (r === 'green' || r === 'yellow' || r === 'gray' ? r : 'gray'))
+                            : ['gray', 'gray', 'gray', 'gray', 'gray']
+                    }));
                     renderBoard();
                 }
                 if (data.game_over) {
