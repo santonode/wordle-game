@@ -477,8 +477,8 @@ def guess():
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT id FROM users WHERE username = %s', (username,))
-                    result = cur.fetchone()
-                    if result is None:
+                    db_result = cur.fetchone()  # Renamed to avoid conflict
+                    if db_result is None:
                         # Create a new user if not found
                         ip_address = request.remote_addr
                         new_username = generate_username(ip_address)
@@ -486,10 +486,10 @@ def guess():
                         cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
                                   (ip_address, new_username, 'Guest', 0))
                         cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
-                        result = cur.fetchone()
+                        db_result = cur.fetchone()
                         conn.commit()
-                    if result:
-                        user_id = result[0]
+                    if db_result:
+                        user_id = db_result[0]
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
                                   (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
                         cur.execute('''
