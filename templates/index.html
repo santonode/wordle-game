@@ -149,7 +149,8 @@
                 return;
             }
 
-            guesses.push({ guess: data.guess, result: data.result });
+            guesses.push({ guess: data.guess, result: [...data.result] }); // Create a copy to avoid reference issues
+            console.log('Updated guesses:', guesses); // Log after push
             renderBoard();
             document.getElementById('guess-input').value = '';
 
@@ -177,16 +178,17 @@
                     const tile = document.createElement('div');
                     tile.className = 'tile';
                     tile.textContent = g.guess[i];
-                    // Debug log to verify result value
-                    console.log(`Row ${rowIndex}, Col ${i}: result[${i}] = ${g.result[i]}`);
+                    // Enhanced debug log
+                    console.log(`Row ${rowIndex}, Col ${i}: result[${i}] = ${g.result[i]}, classList before:`, tile.classList);
                     // Assign class based on result, default to gray if undefined
                     if (g.result[i] === 'green') {
                         tile.classList.add('green');
                     } else if (g.result[i] === 'yellow') {
                         tile.classList.add('yellow');
                     } else {
-                        tile.classList.add('gray'); // Default to gray instead of red
+                        tile.classList.add('gray');
                     }
+                    console.log(`Row ${rowIndex}, Col ${i}: classList after:`, tile.classList); // Log after adding class
                     row.appendChild(tile);
                 }
                 board.appendChild(row);
@@ -216,7 +218,7 @@
             .then(data => {
                 console.log('Initial load response:', data); // Debug log
                 if (data.guesses) {
-                    guesses = data.guesses;
+                    guesses = data.guesses.map(g => ({ guess: g.guess, result: [...g.result] })); // Copy arrays
                     renderBoard();
                 }
                 if (data.game_over) {
