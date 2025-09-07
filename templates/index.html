@@ -149,10 +149,24 @@
                 return;
             }
 
-            // Sanitize and validate result array
-            const sanitizedResult = Array.isArray(data.result) && data.result.length === 5
+            // Sanitize and validate result array, fallback to share_text if win
+            let sanitizedResult = Array.isArray(data.result) && data.result.length === 5
                 ? data.result.map(r => (r === 'green' || r === 'yellow' || r === 'gray' ? r : 'gray'))
                 : ['gray', 'gray', 'gray', 'gray', 'gray'];
+
+            // Fallback to parse share_text for win condition
+            if (data.game_over && data.share_text) {
+                const lines = data.share_text.split('\n');
+                if (lines.length > 1) {
+                    const lastLine = lines[lines.length - 1].trim();
+                    if (lastLine.length === 5) {
+                        sanitizedResult = lastLine.split('').map(char => {
+                            return char === '🟩' ? 'green' : char === '🟨' ? 'yellow' : 'gray';
+                        });
+                    }
+                }
+            }
+
             guesses.push({ guess: data.guess, result: sanitizedResult });
             console.log('Sanitized guesses:', guesses); // Log after sanitization
             renderBoard();
