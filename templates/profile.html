@@ -188,10 +188,10 @@
 
         <!-- Existing Update Username Form -->
         <div class="form-group">
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 <label for="update-username">Update Username</label>
                 <div class="input-container">
-                    <input type="text" id="update-username" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required>
+                    <input type="text" id="update-username" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required autocomplete="off">
                     <button type="submit">Update</button> <!-- Changed to "Update" -->
                 </div>
             </form>
@@ -199,7 +199,7 @@
 
         <!-- Existing Clear Session Button -->
         <div class="form-group">
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 <div class="input-container"> <!-- Removed label -->
                     <button type="submit" id="clear-session" name="clear_session" class="clear-session-btn">Clear Session</button>
                 </div>
@@ -208,11 +208,11 @@
 
         <!-- New Register Form -->
         <div class="form-group">
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 <label for="register-username">Register New User</label>
                 <div class="input-container">
-                    <input type="text" id="register-username" name="register_username" placeholder="New username" required>
-                    <input type="password" id="register-password" name="register_password" placeholder="New password" required>
+                    <input type="text" id="register-username" name="register_username" placeholder="New username" required autocomplete="off">
+                    <input type="password" id="register-password" name="register_password" placeholder="New password" required autocomplete="off">
                     <button type="submit" name="register">Register</button>
                 </div>
             </form>
@@ -220,11 +220,11 @@
 
         <!-- New Login Form -->
         <div class="form-group">
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 <label for="login-username">Login</label>
                 <div class="input-container">
-                    <input type="text" id="login-username" name="login_username" placeholder="Username" required>
-                    <input type="password" id="login-password" name="login_password" placeholder="Password" required>
+                    <input type="text" id="login-username" name="login_username" placeholder="Username" required autocomplete="off">
+                    <input type="password" id="login-password" name="login_password" placeholder="Password" required autocomplete="off">
                     <button type="submit" name="login">Login</button>
                 </div>
             </form>
