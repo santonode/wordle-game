@@ -460,12 +460,14 @@ def guess():
         session['last_played_date'] = today
         message = f'Congratulations! You solved it in {len(session["guesses"])} guesses!'
         win = 1
+        print(f"Debug - Win condition met: guess={guess}, target={target}, guesses={len(session['guesses'])}")
     elif len(session['guesses']) >= 6:
         game_over = True
         session['game_over'] = True
         session['last_played_date'] = today
         message = f'Game over! The word was {target}.'
         win = 0
+        print(f"Debug - Lose condition met: guesses={len(session['guesses'])}, target={target}")
 
     if game_over:
         # Log the game session and update user stats
@@ -473,20 +475,34 @@ def guess():
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT id FROM users WHERE username = %s', (username,))
-                    user_id = cur.fetchone()[0]
-                    # Check if id column exists, fallback to insert without id if not
-                    cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
-                              (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
-                    cur.execute('''
-                        INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
-                        VALUES (%s, %s, %s, %s, 1)
-                        ON CONFLICT (user_id) DO UPDATE
-                        SET wins = user_stats.wins + EXCLUDED.wins,
-                            losses = user_stats.losses + EXCLUDED.losses,
-                            total_guesses = user_stats.total_guesses + EXCLUDED.total_guesses,
-                            games_played = user_stats.games_played + EXCLUDED.games_played
-                    ''', (user_id, win, 1-win, len(session['guesses']), win, 1-win, len(session['guesses'])))
-                    conn.commit()
+                    result = cur.fetchone()
+                    if result is None:
+                        # Create a new user if not found
+                        ip_address = request.remote_addr
+                        new_username = generate_username(ip_address)
+                        session['username'] = new_username
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
+                                  (ip_address, new_username, 'Guest', 0))
+                        cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
+                        result = cur.fetchone()
+                        conn.commit()
+                    if result:
+                        user_id = result[0]
+                        cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
+                                  (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
+                        cur.execute('''
+                            INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
+                            VALUES (%s, %s, %s, %s, 1)
+                            ON CONFLICT (user_id) DO UPDATE
+                            SET wins = user_stats.wins + EXCLUDED.wins,
+                                losses = user_stats.losses + EXCLUDED.losses,
+                                total_guesses = user_stats.total_guesses + EXCLUDED.total_guesses,
+                                games_played = user_stats.games_played + EXCLUDED.games_played
+                        ''', (user_id, win, 1-win, len(session['guesses'])))
+                        conn.commit()  # Ensure commit after stats update
+                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}")
+                    else:
+                        print(f"Debug - Failed to retrieve user_id after creation")
         except psycopg.Error as e:
             print(f"Database logging error: {str(e)}")
 
