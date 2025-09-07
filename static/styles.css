@@ -30,19 +30,19 @@ main {
     transition: all 0.3s;
 }
 
-.tile.teal {
+.tile.green { /* Correct letters in correct position (teal) */
     background-color: #26A69A;
     color: white;
     border-color: #26A69A;
 }
 
-.tile.yellow {
+.tile.yellow { /* Found letters not in correct position (yellow) */
     background-color: #FFCA28;
     color: black;
     border-color: #FFCA28;
 }
 
-.tile.red {
+.tile.gray { /* Not used letters (red) */
     background-color: #EF5350;
     color: white;
     border-color: #EF5350;
