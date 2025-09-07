@@ -334,7 +334,7 @@ def admin():
             admin_pass = request.form.get('admin_pass', '')
             if admin_pass == ADMIN_PASS:
                 session['admin_authenticated'] = True
-                authenticated = true
+                authenticated = True  # Fixed typo from 'true' to 'True'
             else:
                 message = "Incorrect admin password."
         elif 'delete' in request.form:
