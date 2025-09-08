@@ -84,21 +84,26 @@
         }
         .user-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 1fr; /* Adjusted for user_id, username, password, points, edit/delete */
+            grid-template-columns: 50px 1fr 1fr 1fr 1fr; /* Fixed ID column to 50px, others flexible */
             gap: 10px;
-            max-width: 1000px;
+            max-width: 1500px; /* Forced max width to 1500px */
             margin: 0 auto;
-            padding: 20px;
+            padding: 5px; /* Reduced padding by 75% (from 20px to 5px) */
             background-color: #f0f0f0;
             border-radius: 5px;
         }
         .user-grid div {
-            padding: 10px;
+            padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
             text-align: left;
+            border: 0.5px solid #ccc; /* Reduced border by 75% (from 2px to 0.5px) */
         }
         .user-grid .user-id {
             font-weight: bold;
             color: #263238;
+            width: 50px; /* Force width of ID column to 50px */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .user-grid .username {
             font-weight: bold;
@@ -135,8 +140,8 @@
         .edit-form {
             display: none;
             grid-column: span 5; /* Span all columns */
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 2.5px; /* Reduced margin by 75% (from 10px to 2.5px) */
+            padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
             background-color: #e0e0e0;
             border-radius: 5px;
         }
@@ -144,8 +149,8 @@
             padding: 5px;
             font-size: 16px;
             width: 200px;
-            margin-right: 10px;
-            margin-bottom: 5px;
+            margin-right: 5px; /* Reduced margin by 75% (from 10px to 2.5px) */
+            margin-bottom: 2.5px; /* Reduced margin by 75% (from 5px to 1.25px) */
         }
         .message {
             margin-top: 10px;
@@ -157,8 +162,8 @@
                 padding: 0 10px;
             }
             .user-grid {
-                grid-template-columns: 1fr; /* Stack on mobile */
-                padding: 10px;
+                grid-template-columns: 50px 1fr; /* Stack on mobile, keep ID at 50px */
+                padding: 5px; /* Reduced padding by 75% */
             }
             .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
                 width: 100%;
@@ -219,7 +224,7 @@
                             <button type="submit" class="save-btn" name="save">Save</button>
                         </form>
                     </div>
-                    <br> <!-- Added new line after each record -->
+                    <br> <!-- New line after each record -->
                 {% endfor %}
             </div>
             {% if message %}
