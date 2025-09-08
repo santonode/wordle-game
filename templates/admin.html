@@ -10,7 +10,7 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #263238;
+            background-color: #263238; /* Navy */
             color: white;
             padding: 5px 0;
             text-align: center;
@@ -82,77 +82,50 @@
         .auth-form button:hover {
             background-color: #1e7d71;
         }
-        .user-grid {
-            display: grid;
-            grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Fixed widths: ID, Username, Password, Points, Edit, Delete */
-            gap: 5px; /* Reduced gap for compactness */
+        .user-table {
             max-width: 1500px;
             margin: 0 auto;
-            padding: 5px;
+            border-collapse: collapse;
             background-color: #f0f0f0;
             border-radius: 5px;
+            overflow: hidden;
         }
-        .user-grid div {
-            padding: 5px; /* Increased slightly for readability */
+        .user-table th, .user-table td {
+            padding: 5px;
             text-align: left;
-            border: 1px solid #ccc; /* Slightly thicker border for clarity */
-            overflow: hidden; /* Prevent overflow */
-            text-overflow: ellipsis; /* Handle long text */
-            white-space: nowrap; /* Keep text on one line */
+            border: 1px solid #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .user-grid .user-id {
+        .user-table th {
+            background-color: #263238;
+            color: white;
+        }
+        .user-table .user-id {
             font-weight: bold;
             color: #263238;
             width: 50px;
         }
-        .user-grid .username {
+        .user-table .username {
             font-weight: bold;
             width: 100px;
         }
-        .user-grid .password {
+        .user-table .password {
             width: 500px;
         }
-        .user-grid .points {
+        .user-table .points {
             width: 100px;
         }
-        .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
-            padding: 5px;
-            font-size: 14px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100px;
-            text-align: center; /* Center button text */
-        }
-        .user-grid .edit-btn {
-            background-color: #26A69A;
-            color: white;
-        }
-        .user-grid .edit-btn:hover {
-            background-color: #1e7d71;
-        }
-        .user-grid .save-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .user-grid .save-btn:hover {
-            background-color: #45a049;
-        }
-        .user-grid .delete-btn {
-            background-color: #FF4444;
-            color: white;
-        }
-        .user-grid .delete-btn:hover {
-            background-color: #CC0000;
+        .user-table .actions {
+            width: 200px;
+            text-align: center;
         }
         .edit-form {
             display: none;
-            grid-column: 1 / -1; /* Span all six columns */
-            margin-top: 5px;
             padding: 5px;
             background-color: #e0e0e0;
             border-radius: 5px;
-            grid-row: auto; /* Ensure it stays in the same row */
         }
         .edit-form input {
             padding: 5px;
@@ -161,33 +134,42 @@
             margin-right: 5px;
             margin-bottom: 5px;
         }
+        .edit-btn, .save-btn, .delete-btn {
+            padding: 5px 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .edit-btn, .save-btn {
+            background-color: #26A69A;
+            color: white;
+        }
+        .edit-btn:hover, .save-btn:hover {
+            background-color: #1e7d71;
+        }
+        .delete-btn {
+            background-color: #FF4444;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #CC0000;
+        }
         .message {
             margin-top: 10px;
             color: #FFCA28;
         }
 
         @media (max-width: 600px) {
-            .content {
-                padding: 0 10px;
-            }
-            .user-grid {
-                grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Maintain column widths */
-                padding: 5px;
-            }
-            .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
+            .user-table {
                 width: 100%;
-                max-width: 100px;
             }
-            .edit-form {
-                grid-column: 1 / -1; /* Span all columns on mobile */
+            .user-table th, .user-table td {
+                padding: 3px;
+                font-size: 12px;
             }
-            .auth-form input {
-                width: 100%;
-                max-width: 250px;
-            }
-            .auth-form button {
-                width: 100%;
-                max-width: 150px;
+            .user-table .password {
+                width: auto;
             }
         }
     </style>
@@ -209,33 +191,47 @@
             {% endif %}
         {% else %}
             <h2>User List</h2>
-            <div class="user-grid">
-                {% for user in users %}
-                    <div class="user-id">{{ user.id }}</div>
-                    <div class="username">{{ user.username }}</div>
-                    <div class="password">{{ user.password }}</div>
-                    <div class="points">{{ user.points }}</div>
-                    <div>
-                        <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
-                    </div>
-                    <div>
-                        <form method="POST" style="display: inline;">
-                            <input type="hidden" name="delete_username" value="{{ user.username }}">
-                            <button type="submit" class="delete-btn" name="delete">Delete</button>
-                        </form>
-                    </div>
-                    <div class="edit-form" id="edit-form-{{ loop.index }}">
-                        <form method="POST">
-                            <input type="hidden" name="edit_username" value="{{ user.username }}">
-                            <input type="text" name="new_username" placeholder="New Username" value="{{ user.username }}" required>
-                            <input type="password" name="new_password" placeholder="New Password" value="{{ user.password }}" required>
-                            <input type="number" name="new_points" placeholder="Points" value="{{ user.points }}" min="0" required>
-                            <button type="submit" class="save-btn" name="save">Save</button>
-                        </form>
-                    </div>
-                    <br> <!-- New line after each record -->
-                {% endfor %}
-            </div>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Points</th>
+                        <th colspan="2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td class="user-id">{{ user.id }}</td>
+                            <td class="username">{{ user.username }}</td>
+                            <td class="password">{{ user.password }}</td>
+                            <td class="points">{{ user.points }}</td>
+                            <td>
+                                <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
+                            </td>
+                            <td>
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="delete_username" value="{{ user.username }}">
+                                    <button type="submit" class="delete-btn" name="delete">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr class="edit-form" id="edit-form-{{ loop.index }}" style="display: none;">
+                            <td colspan="6">
+                                <form method="POST">
+                                    <input type="hidden" name="edit_username" value="{{ user.username }}">
+                                    <input type="text" name="new_username" placeholder="New Username" value="{{ user.username }}" required>
+                                    <input type="password" name="new_password" placeholder="New Password" value="{{ user.password }}" required>
+                                    <input type="number" name="new_points" placeholder="Points" value="{{ user.points }}" min="0" required>
+                                    <button type="submit" class="save-btn" name="save">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% if message %}
                 <div class="message">{{ message }}</div>
             {% endif %}
@@ -249,20 +245,20 @@
     <script>
         function toggleEdit(formId, userId, username, password, points, button) {
             const form = document.getElementById(formId);
-            const isEditing = form.style.display === 'block';
+            const isEditing = form.style.display === 'table-row';
 
             if (isEditing) {
                 form.style.display = 'none';
                 button.textContent = 'Edit';
                 button.className = 'edit-btn';
             } else {
-                form.style.display = 'block';
+                form.style.display = 'table-row';
                 button.textContent = 'Save';
                 button.className = 'save-btn';
                 const inputs = form.getElementsByTagName('input');
-                inputs[1].value = username;
-                inputs[2].value = password;
-                inputs[3].value = points;
+                inputs[1].value = username; // Set username
+                inputs[2].value = password; // Set password
+                inputs[3].value = points;   // Set points
             }
         }
     </script>
