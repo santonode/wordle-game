@@ -84,7 +84,7 @@
         }
         .user-grid {
             display: grid;
-            grid-template-columns: 50px 1fr 1fr 1fr 1fr; /* Fixed ID column to 50px, others flexible */
+            grid-template-columns: 50px 100px minmax(0, 1fr) 100px 100px 100px; /* ID: 50px, Username: 100px, Password: flexible, Points: 100px, Edit: 100px, Delete: 100px */
             gap: 10px;
             max-width: 1500px; /* Forced max width to 1500px */
             margin: 0 auto;
@@ -107,6 +107,16 @@
         }
         .user-grid .username {
             font-weight: bold;
+            width: 100px; /* Force width of username column to 100px */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .user-grid .points {
+            width: 100px; /* Force width of points column to 100px */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
             padding: 5px 10px;
@@ -114,7 +124,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            width: 70px;
+            width: 100px; /* Force width of edit/delete buttons to 100px */
         }
         .user-grid .edit-btn {
             background-color: #26A69A;
@@ -139,7 +149,7 @@
         }
         .edit-form {
             display: none;
-            grid-column: span 5; /* Span all columns */
+            grid-column: span 6; /* Span all columns (ID, Username, Password, Points, Edit, Delete) */
             margin-top: 2.5px; /* Reduced margin by 75% (from 10px to 2.5px) */
             padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
             background-color: #e0e0e0;
@@ -162,7 +172,7 @@
                 padding: 0 10px;
             }
             .user-grid {
-                grid-template-columns: 50px 1fr; /* Stack on mobile, keep ID at 50px */
+                grid-template-columns: 50px 100px minmax(0, 1fr) 100px 100px 100px; /* Maintain column widths on mobile */
                 padding: 5px; /* Reduced padding by 75% */
             }
             .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
@@ -205,7 +215,7 @@
                     <div class="user-id">{{ user.id }}</div>
                     <div class="username">{{ user.username }}</div>
                     <div>{{ user.password }}</div>
-                    <div>{{ user.points }}</div>
+                    <div class="points">{{ user.points }}</div>
                     <div>
                         <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
                     </div>
