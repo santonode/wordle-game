@@ -148,6 +148,20 @@ def index():
 
 @app.route('/wordlist')
 def wordlist():
+    username = session.get('username')
+    if username:
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('SELECT id FROM users WHERE username = %s', (username,))
+                    user_id = cur.fetchone()
+                    if user_id:
+                        user_id = user_id[0]
+                        cur.execute('UPDATE users SET points = GREATEST(points - 1, 0) WHERE id = %s', (user_id,))
+                        conn.commit()
+                        print(f"Debug - Deducted 1 point for user {username}, new points: {cur.fetchone()[0]}")
+        except psycopg.Error as e:
+            print(f"Database error deducting point for wordlist: {str(e)}")
     return render_template('wordlist.html', words=WORDS)
 
 @app.route('/stats')
@@ -457,12 +471,14 @@ def guess():
     game_over = False
     message = None
     win = 0
+    points_change = 0
     if guess == target:
         game_over = True
         session['game_over'] = True
         session['last_played_date'] = today
         message = f'Congratulations! You solved it in {len(session["guesses"])} guesses!'
         win = 1
+        points_change = 10  # Add 10 points for a win
         print(f"Debug - Win condition met: guess={guess}, target={target}, guesses={len(session['guesses'])}")
     elif len(session['guesses']) >= 6:
         game_over = True
@@ -470,10 +486,11 @@ def guess():
         session['last_played_date'] = today
         message = f'Game over! The word was {target}.'
         win = 0
+        points_change = -10  # Subtract 10 points for a loss
         print(f"Debug - Lose condition met: guesses={len(session['guesses'])}, target={target}")
 
     if game_over:
-        # Log the game session and update user stats
+        # Log the game session and update user stats and points
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
@@ -502,8 +519,10 @@ def guess():
                                 total_guesses = user_stats.total_guesses + EXCLUDED.total_guesses,
                                 games_played = user_stats.games_played + EXCLUDED.games_played
                         ''', (user_id, win, 1-win, len(session['guesses'])))
-                        conn.commit()  # Ensure commit after stats update
-                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}")
+                        # Update points based on game outcome
+                        cur.execute('UPDATE users SET points = GREATEST(points + %s, 0) WHERE id = %s', (points_change, user_id))
+                        conn.commit()  # Ensure commit after stats and points update
+                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}")
                     else:
                         print(f"Debug - Failed to retrieve user_id after creation")
         except psycopg.Error as e:
