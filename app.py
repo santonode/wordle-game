@@ -132,19 +132,30 @@ def index():
     last_played = session.get('last_played_date')
     username = session.get('username')
     
-    # Clear session if no guesses or new day
+    # Clear session if no guesses or new day, but preserve username if it exists
     if not session.get('guesses') or (last_played and last_played != today):
-        session.clear()
         session['guesses'] = []
         session['game_over'] = False
         session['hard_mode'] = False
         session['last_played_date'] = today if not last_played else None
+        if not username:
+            ip_address = request.remote_addr
+            username = generate_username(ip_address)
+            session['username'] = username
+            try:
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s) ON CONFLICT (username) DO NOTHING',
+                                  (ip_address, username, 'Guest', 0))
+                        conn.commit()
+            except psycopg.Error as e:
+                print(f"Database error creating guest user: {str(e)}")
 
     # Block only if the game was completed today for the current user
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!")
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username)
     
-    return render_template('index.html', game_blocked=False)
+    return render_template('index.html', game_blocked=False, username=username)
 
 @app.route('/wordlist')
 def wordlist():
@@ -274,7 +285,6 @@ def profile():
         elif 'login' in request.form:
             username = request.form.get('login_username', '').strip()
             password = request.form.get('login_password', '')
-            switch_user = request.form.get('switch_user', '0') == '1'  # Check for hidden switch_user field
             if username and password:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
@@ -288,7 +298,7 @@ def profile():
                                 if stored_password == hashed_password:
                                     session.clear()  # Always clear session on login
                                     session['username'] = username  # Update to registered username
-                                    user_type = stored_user_type  # Update user type to Member
+                                    user_type = stored_user_type  # Set to 'Member' for registered users
                                     points = stored_points
                                     message = "Login successful!"
                                 else:
@@ -340,7 +350,7 @@ def profile():
                     print(f"Database error updating username: {str(e)}")
                     message = f"Error updating username: {str(e)}"
             else:
-                message = "Username must be 1-12 alphanumeric records."
+                message = "Username must be 1-12 alphanumeric characters."
 
     return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
 
@@ -415,6 +425,8 @@ def guess():
     today = str(date.today())
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
+    
+    # Only create a guest user if no username exists and not logged in
     if not username:
         ip_address = request.remote_addr
         username = generate_username(ip_address)
@@ -422,9 +434,20 @@ def guess():
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s) ON CONFLICT (username) DO NOTHING',
-                              (ip_address, username, 'Guest', 0))
-                    conn.commit()
+                    cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
+                    if not cur.fetchone():
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
+                                  (ip_address, username, 'Guest', 0))
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                        conn.commit()
+                    else:
+                        cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
+                        user_type = cur.fetchone()[0]
+                        if user_type == 'Guest':
+                            print(f"Debug - Reusing existing guest user: {username}")
+                        else:
+                            print(f"Debug - Existing user found but not guest: {username}, user_type: {user_type}")
+                conn.commit()
         except psycopg.Error as e:
             print(f"Database error creating guest user: {str(e)}")
 
@@ -435,13 +458,13 @@ def guess():
         return jsonify({'error': 'Game is over. Start a new game.'})
 
     guess = request.json.get('guess', '').upper()
-    print(f"Debug - Received guess: {guess}")  # Add debugging
+    print(f"Debug - Received guess: {guess}, username: {username}")  # Add debugging
     hard_mode = session.get('hard_mode', False)
     target = get_daily_word()
-    print(f"Debug - Target word: {target}")  # Add target for debugging
+    print(f"Debug - Target word: {target}, username: {username}")  # Add target for debugging
 
     if len(guess) != 5 or guess not in WORDS:
-        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in WORDS}")  # Add debugging
+        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in WORDS}, username: {username}")  # Add debugging
         return jsonify({'error': 'Invalid word. Must be a 5-letter word from the list.'})
 
     # Hard Mode: Check if guess uses all known green/yellow letters
@@ -473,7 +496,7 @@ def guess():
             guess_counts[g] = guess_counts.get(g, 0) + 1
         else:
             all_green = False
-    print(f"Debug - After first pass, result: {result}, all_green: {all_green}")  # Debug after first pass
+    print(f"Debug - After first pass, result: {result}, all_green: {all_green}, username: {username}")  # Debug after first pass
 
     # Second pass: Mark yellow letters only if not all green
     if not all_green:
@@ -481,7 +504,7 @@ def guess():
             if result[i] == 'gray' and g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
                 result[i] = 'yellow'
                 guess_counts[g] = guess_counts.get(g, 0) + 1
-    print(f"Debug - After second pass, result: {result}")  # Debug after second pass
+    print(f"Debug - After second pass, result: {result}, username: {username}")  # Debug after second pass
 
     session['guesses'].append({'guess': guess, 'result': result})
     session.modified = True
@@ -513,19 +536,20 @@ def guess():
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('SELECT id FROM users WHERE username = %s', (username,))
+                    cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                     db_result = cur.fetchone()
-                    if db_result is None:
+                    if not db_result:
                         ip_address = request.remote_addr
                         new_username = generate_username(ip_address)
                         session['username'] = new_username
                         cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
                                   (ip_address, new_username, 'Guest', 0))
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                        conn.commit()
                         cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
                         db_result = cur.fetchone()
-                        conn.commit()
-                    if db_result:
-                        user_id = db_result[0]
+                    user_id, user_type = db_result
+                    if user_type != 'Guest':  # Ensure points are updated only for the intended user
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
                                   (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
                         cur.execute('''
@@ -537,12 +561,11 @@ def guess():
                                 total_guesses = user_stats.total_guesses + EXCLUDED.total_guesses,
                                 games_played = user_stats.games_played + EXCLUDED.games_played
                         ''', (user_id, win, 1-win, len(session['guesses'])))
-                        # Update points based on game outcome
                         cur.execute('UPDATE users SET points = GREATEST(points + %s, 0) WHERE id = %s', (points_change, user_id))
                         conn.commit()
-                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}, username={username}")
+                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}, username={username}, user_type={user_type}")
                     else:
-                        print(f"Debug - Failed to retrieve user_id after creation")
+                        print(f"Debug - Skipping points update for guest user: {username}")
         except psycopg.Error as e:
             print(f"Database logging error: {str(e)}")
 
