@@ -286,11 +286,10 @@ def profile():
                             if result:
                                 stored_user_type, stored_points, stored_password = result
                                 if stored_password == hashed_password:
-                                    if switch_user or session.get('username') != username:
-                                        session.clear()  # Clear session to switch to new user
-                                        session['username'] = username  # Update to registered username
-                                        user_type = stored_user_type
-                                        points = stored_points
+                                    session.clear()  # Always clear session on login
+                                    session['username'] = username  # Update to registered username
+                                    user_type = stored_user_type  # Update user type to Member
+                                    points = stored_points
                                     message = "Login successful!"
                                 else:
                                     message = "Invalid username or password."
@@ -314,7 +313,7 @@ def profile():
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0))
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
-                                session.clear()  # Clear session to switch to new user
+                                session.clear()  # Clear session on registration
                                 session['username'] = new_username  # Update to registered username
                                 user_type = 'Member'
                                 points = 0
@@ -341,7 +340,7 @@ def profile():
                     print(f"Database error updating username: {str(e)}")
                     message = f"Error updating username: {str(e)}"
             else:
-                message = "Username must be 1-12 alphanumeric characters."
+                message = "Username must be 1-12 alphanumeric records."
 
     return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
 
@@ -416,7 +415,20 @@ def guess():
     today = str(date.today())
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
-    if username and session.get('last_played_date') == today and session.get('game_over', False):
+    if not username:
+        ip_address = request.remote_addr
+        username = generate_username(ip_address)
+        session['username'] = username
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s) ON CONFLICT (username) DO NOTHING',
+                              (ip_address, username, 'Guest', 0))
+                    conn.commit()
+        except psycopg.Error as e:
+            print(f"Database error creating guest user: {str(e)}")
+
+    if session.get('last_played_date') == today and session.get('game_over', False):
         return jsonify({'error': 'You have already played today. Use \'Clear Session\' to test again!'})
 
     if session.get('game_over'):
@@ -486,7 +498,7 @@ def guess():
         message = f'Congratulations! You solved it in {len(session["guesses"])} guesses!'
         win = 1
         points_change = 10  # Add 10 points for a win
-        print(f"Debug - Win condition met: guess={guess}, target={target}, guesses={len(session['guesses'])}")
+        print(f"Debug - Win condition met: guess={guess}, target={target}, guesses={len(session['guesses'])}, username={username}")
     elif len(session['guesses']) >= 6:
         game_over = True
         session['game_over'] = True
@@ -494,7 +506,7 @@ def guess():
         message = f'Game over! The word was {target}.'
         win = 0
         points_change = -10  # Subtract 10 points for a loss
-        print(f"Debug - Lose condition met: guesses={len(session['guesses'])}, target={target}")
+        print(f"Debug - Lose condition met: guesses={len(session['guesses'])}, target={target}, username={username}")
 
     if game_over:
         # Log the game session and update user stats and points
@@ -502,9 +514,8 @@ def guess():
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT id FROM users WHERE username = %s', (username,))
-                    db_result = cur.fetchone()  # Renamed to avoid conflict
+                    db_result = cur.fetchone()
                     if db_result is None:
-                        # Create a new user if not found
                         ip_address = request.remote_addr
                         new_username = generate_username(ip_address)
                         session['username'] = new_username
@@ -528,8 +539,8 @@ def guess():
                         ''', (user_id, win, 1-win, len(session['guesses'])))
                         # Update points based on game outcome
                         cur.execute('UPDATE users SET points = GREATEST(points + %s, 0) WHERE id = %s', (points_change, user_id))
-                        conn.commit()  # Ensure commit after stats and points update
-                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}")
+                        conn.commit()
+                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}, username={username}")
                     else:
                         print(f"Debug - Failed to retrieve user_id after creation")
         except psycopg.Error as e:
@@ -542,10 +553,10 @@ def guess():
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
         }[color] for color in g['result']) + '\n'
 
-    print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}")  # Add debugging
+    print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}, username={username}")  # Add debugging
     return jsonify({
         'guess': guess,
-        'result': result,  # Explicitly use the computed result
+        'result': result,
         'game_over': game_over,
         'message': message,
         'share_text': share_text
