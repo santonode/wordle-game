@@ -23,14 +23,12 @@ Sharing results: After finishing, you can click the "Share" button to copy a col
 of your results to show friends on social media without spoiling the words.
 
 wordle-game/
-├── static/
-│   ├── styles.css
-├── templates/
-│   ├── stats.html
-│   ├── index.html
-│   ├── wordlist.html
-│   ├── profile.html
-├── app.py
-├── words.txt
-├── requirements.txt
-├── render.yaml
+static/styles
+templates/stats.html
+templates/index.html
+templates/wordlist.html
+templates/profile.html
+app.py
+words.txt
+requirements.txt
+render.yaml
