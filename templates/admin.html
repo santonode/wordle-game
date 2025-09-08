@@ -84,9 +84,9 @@
         }
         .user-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr; /* Adjusted for username, password, edit, delete */
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr; /* Adjusted for user_id, username, password, points, edit/delete */
             gap: 10px;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f0f0f0;
@@ -95,6 +95,10 @@
         .user-grid div {
             padding: 10px;
             text-align: left;
+        }
+        .user-grid .user-id {
+            font-weight: bold;
+            color: #263238;
         }
         .user-grid .username {
             font-weight: bold;
@@ -130,7 +134,7 @@
         }
         .edit-form {
             display: none;
-            grid-column: span 4; /* Span all columns */
+            grid-column: span 5; /* Span all columns */
             margin-top: 10px;
             padding: 10px;
             background-color: #e0e0e0;
@@ -193,10 +197,12 @@
             <h2>User List</h2>
             <div class="user-grid">
                 {% for user in users %}
+                    <div class="user-id">{{ user.id }}</div>
                     <div class="username">{{ user.username }}</div>
                     <div>{{ user.password }}</div>
+                    <div>{{ user.points }}</div>
                     <div>
-                        <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.username }}', '{{ user.password }}', this)">Edit</button>
+                        <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
                     </div>
                     <div>
                         <form method="POST" style="display: inline;">
@@ -209,6 +215,7 @@
                             <input type="hidden" name="edit_username" value="{{ user.username }}">
                             <input type="text" name="new_username" placeholder="New Username" value="{{ user.username }}" required>
                             <input type="password" name="new_password" placeholder="New Password" value="{{ user.password }}" required>
+                            <input type="number" name="new_points" placeholder="Points" value="{{ user.points }}" min="0" required>
                             <button type="submit" class="save-btn" name="save">Save</button>
                         </form>
                     </div>
@@ -225,7 +232,7 @@
     </div>
 
     <script>
-        function toggleEdit(formId, username, password, button) {
+        function toggleEdit(formId, userId, username, password, points, button) {
             const form = document.getElementById(formId);
             const isEditing = form.style.display === 'block';
 
@@ -240,6 +247,8 @@
                 const inputs = form.getElementsByTagName('input');
                 inputs[1].value = username; // Set username
                 inputs[2].value = password; // Set password
+                inputs[3].value = points;   // Set points
+                // userId is not editable, so no input is set for it
             }
         }
     </script>
