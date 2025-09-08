@@ -84,7 +84,7 @@
         }
         .user-grid {
             display: grid;
-            grid-template-columns: 50px 100px minmax(0, 1fr) 100px 100px 100px; /* ID: 50px, Username: 100px, Password: flexible, Points: 100px, Edit: 100px, Delete: 100px */
+            grid-template-columns: 50px 100px 500px 100px 100px 100px; /* ID: 50px, Username: 100px, Password: 500px, Points: 100px, Edit: 100px, Delete: 100px */
             gap: 10px;
             max-width: 1500px; /* Forced max width to 1500px */
             margin: 0 auto;
@@ -108,6 +108,12 @@
         .user-grid .username {
             font-weight: bold;
             width: 100px; /* Force width of username column to 100px */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .user-grid .password {
+            width: 500px; /* Force width of password column to 500px */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -149,7 +155,7 @@
         }
         .edit-form {
             display: none;
-            grid-column: span 6; /* Span all columns (ID, Username, Password, Points, Edit, Delete) */
+            grid-column: span 6; /* Span all six columns */
             margin-top: 2.5px; /* Reduced margin by 75% (from 10px to 2.5px) */
             padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
             background-color: #e0e0e0;
@@ -172,7 +178,7 @@
                 padding: 0 10px;
             }
             .user-grid {
-                grid-template-columns: 50px 100px minmax(0, 1fr) 100px 100px 100px; /* Maintain column widths on mobile */
+                grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Maintain column widths on mobile */
                 padding: 5px; /* Reduced padding by 75% */
             }
             .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
@@ -214,7 +220,7 @@
                 {% for user in users %}
                     <div class="user-id">{{ user.id }}</div>
                     <div class="username">{{ user.username }}</div>
-                    <div>{{ user.password }}</div>
+                    <div class="password">{{ user.password }}</div>
                     <div class="points">{{ user.points }}</div>
                     <div>
                         <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
