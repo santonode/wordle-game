@@ -10,7 +10,7 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #263238; /* Navy */
+            background-color: #263238;
             color: white;
             padding: 5px 0;
             text-align: center;
@@ -84,53 +84,45 @@
         }
         .user-grid {
             display: grid;
-            grid-template-columns: 50px 100px 500px 100px 100px 100px; /* ID: 50px, Username: 100px, Password: 500px, Points: 100px, Edit: 100px, Delete: 100px */
-            gap: 10px;
-            max-width: 1500px; /* Forced max width to 1500px */
+            grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Fixed widths: ID, Username, Password, Points, Edit, Delete */
+            gap: 5px; /* Reduced gap for compactness */
+            max-width: 1500px;
             margin: 0 auto;
-            padding: 5px; /* Reduced padding by 75% (from 20px to 5px) */
+            padding: 5px;
             background-color: #f0f0f0;
             border-radius: 5px;
         }
         .user-grid div {
-            padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
+            padding: 5px; /* Increased slightly for readability */
             text-align: left;
-            border: 0.5px solid #ccc; /* Reduced border by 75% (from 2px to 0.5px) */
+            border: 1px solid #ccc; /* Slightly thicker border for clarity */
+            overflow: hidden; /* Prevent overflow */
+            text-overflow: ellipsis; /* Handle long text */
+            white-space: nowrap; /* Keep text on one line */
         }
         .user-grid .user-id {
             font-weight: bold;
             color: #263238;
-            width: 50px; /* Force width of ID column to 50px */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 50px;
         }
         .user-grid .username {
             font-weight: bold;
-            width: 100px; /* Force width of username column to 100px */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 100px;
         }
         .user-grid .password {
-            width: 500px; /* Force width of password column to 500px */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 500px;
         }
         .user-grid .points {
-            width: 100px; /* Force width of points column to 100px */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 100px;
         }
         .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
-            padding: 5px 10px;
+            padding: 5px;
             font-size: 14px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            width: 100px; /* Force width of edit/delete buttons to 100px */
+            width: 100px;
+            text-align: center; /* Center button text */
         }
         .user-grid .edit-btn {
             background-color: #26A69A;
@@ -140,14 +132,14 @@
             background-color: #1e7d71;
         }
         .user-grid .save-btn {
-            background-color: #4CAF50; /* Green for Save */
+            background-color: #4CAF50;
             color: white;
         }
         .user-grid .save-btn:hover {
             background-color: #45a049;
         }
         .user-grid .delete-btn {
-            background-color: #FF4444; /* Red for Delete */
+            background-color: #FF4444;
             color: white;
         }
         .user-grid .delete-btn:hover {
@@ -155,18 +147,19 @@
         }
         .edit-form {
             display: none;
-            grid-column: span 6; /* Span all six columns */
-            margin-top: 2.5px; /* Reduced margin by 75% (from 10px to 2.5px) */
-            padding: 2.5px; /* Reduced padding by 75% (from 10px to 2.5px) */
+            grid-column: 1 / -1; /* Span all six columns */
+            margin-top: 5px;
+            padding: 5px;
             background-color: #e0e0e0;
             border-radius: 5px;
+            grid-row: auto; /* Ensure it stays in the same row */
         }
         .edit-form input {
             padding: 5px;
             font-size: 16px;
             width: 200px;
-            margin-right: 5px; /* Reduced margin by 75% (from 10px to 2.5px) */
-            margin-bottom: 2.5px; /* Reduced margin by 75% (from 5px to 1.25px) */
+            margin-right: 5px;
+            margin-bottom: 5px;
         }
         .message {
             margin-top: 10px;
@@ -178,15 +171,15 @@
                 padding: 0 10px;
             }
             .user-grid {
-                grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Maintain column widths on mobile */
-                padding: 5px; /* Reduced padding by 75% */
+                grid-template-columns: 50px 100px 500px 100px 100px 100px; /* Maintain column widths */
+                padding: 5px;
             }
             .user-grid .edit-btn, .user-grid .delete-btn, .user-grid .save-btn {
                 width: 100%;
                 max-width: 100px;
             }
             .edit-form {
-                grid-column: span 1;
+                grid-column: 1 / -1; /* Span all columns on mobile */
             }
             .auth-form input {
                 width: 100%;
@@ -267,10 +260,9 @@
                 button.textContent = 'Save';
                 button.className = 'save-btn';
                 const inputs = form.getElementsByTagName('input');
-                inputs[1].value = username; // Set username
-                inputs[2].value = password; // Set password
-                inputs[3].value = points;   // Set points
-                // userId is not editable, so no input is set for it
+                inputs[1].value = username;
+                inputs[2].value = password;
+                inputs[3].value = points;
             }
         }
     </script>
