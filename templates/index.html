@@ -43,6 +43,7 @@
             left: 10px;
             font-size: 14px;
             color: #FFCA28;
+            padding: 2px 5px;
         }
         .header .gear-icon {
             position: absolute;
@@ -92,13 +93,25 @@
             justify-content: center;
             gap: 20px;
         }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .header .user-info {
+                font-size: 12px;
+                padding: 1px 3px;
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Wurdle</h1>
         {% if username %}
-            <div class="user-info">User: {{ username }} {% if user_type == 'Member' %}(Member){% else %}(Guest){% endif %}</div>
+            <div class="user-info">{{ username }}{% if user_type == 'Member' %}(M){% else %}(G){% endif %}</div>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
