@@ -357,6 +357,7 @@ def admin():
             edit_username = request.form.get('edit_username')
             new_username = request.form.get('new_username').strip()
             new_password = request.form.get('new_password')
+            new_points = request.form.get('new_points', 0, type=int)  # Get points with default 0
             if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
@@ -365,8 +366,8 @@ def admin():
                             if cur.fetchone():
                                 message = "Username already taken."
                             else:
-                                cur.execute('UPDATE users SET username = %s, password = %s WHERE username = %s',
-                                          (new_username, hash_password(new_password), edit_username))
+                                cur.execute('UPDATE users SET username = %s, password = %s, points = %s WHERE username = %s',
+                                          (new_username, hash_password(new_password), new_points, edit_username))
                                 conn.commit()
                                 message = f"User {edit_username} updated to {new_username} successfully."
                 except psycopg.Error as e:
@@ -381,8 +382,8 @@ def admin():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT username, password FROM users')
-                users = [{'username': row[0], 'password': row[1]} for row in cur.fetchall()]
+                cur.execute('SELECT id, username, password, points FROM users')
+                users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
         return render_template('admin.html', authenticated=True, users=users, message=message)
     except psycopg.Error as e:
         print(f"Database error in admin: {str(e)}")
