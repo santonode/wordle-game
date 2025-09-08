@@ -37,6 +37,13 @@
             background-clip: text;
             color: transparent;
         }
+        .header .user-info {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 14px;
+            color: #FFCA28;
+        }
         .header .gear-icon {
             position: absolute;
             top: 5px;
@@ -90,6 +97,9 @@
 <body>
     <div class="header">
         <h1>Wurdle</h1>
+        {% if username %}
+            <div class="user-info">User: {{ username }} {% if user_type == 'Member' %}(Member){% else %}(Guest){% endif %}</div>
+        {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
