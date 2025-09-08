@@ -39,16 +39,19 @@
         }
         .header .user-info {
             position: absolute;
-            top: 5px;
+            top: 50%;
             left: 10px;
+            transform: translateY(-50%);
             font-size: 14px;
             color: #FFCA28;
             padding: 2px 5px;
+            line-height: 1;
         }
         .header .gear-icon {
             position: absolute;
-            top: 5px;
+            top: 50%;
             right: 10px;
+            transform: translateY(-50%);
             font-size: 16px;
             text-decoration: none;
             color: white;
@@ -110,8 +113,10 @@
 <body>
     <div class="header">
         <h1>Wurdle</h1>
-        {% if username %}
-            <div class="user-info">{{ username }}{% if user_type == 'Member' %}(M){% else %}(G){% endif %}</div>
+        {% if username and user_type == 'Member' %}
+            <div class="user-info">{{ username }}</div>
+        {% elif username %}
+            <div class="user-info">guest</div>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
