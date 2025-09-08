@@ -165,9 +165,9 @@ def index():
 
     # Block only if the game was completed today for the current user
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username, user_type=user_type)
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type)
     
-    return render_template('index.html', game_blocked=False, username=username, user_type=user_type)
+    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type)
 
 @app.route('/wordlist')
 def wordlist():
