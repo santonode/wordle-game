@@ -285,7 +285,8 @@ def profile():
                             if result:
                                 stored_user_type, stored_points, stored_password = result
                                 if stored_password == hashed_password:
-                                    session['username'] = username
+                                    session.clear()  # Clear existing session
+                                    session['username'] = username  # Update to registered username
                                     message = "Login successful!"
                                 else:
                                     message = "Invalid username or password."
@@ -309,7 +310,8 @@ def profile():
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0))
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
-                                session['username'] = new_username
+                                session.clear()  # Clear existing session
+                                session['username'] = new_username  # Update to registered username
                                 user_type = 'Member'
                                 message = "Registration successful! You are now a Member."
                 except psycopg.Error as e:
