@@ -274,6 +274,7 @@ def profile():
         elif 'login' in request.form:
             username = request.form.get('login_username', '').strip()
             password = request.form.get('login_password', '')
+            switch_user = request.form.get('switch_user', '0') == '1'  # Check for hidden switch_user field
             if username and password:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
@@ -285,8 +286,11 @@ def profile():
                             if result:
                                 stored_user_type, stored_points, stored_password = result
                                 if stored_password == hashed_password:
-                                    session.clear()  # Clear existing session
-                                    session['username'] = username  # Update to registered username
+                                    if switch_user or session.get('username') != username:
+                                        session.clear()  # Clear session to switch to new user
+                                        session['username'] = username  # Update to registered username
+                                        user_type = stored_user_type
+                                        points = stored_points
                                     message = "Login successful!"
                                 else:
                                     message = "Invalid username or password."
@@ -310,9 +314,10 @@ def profile():
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0))
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
-                                session.clear()  # Clear existing session
+                                session.clear()  # Clear session to switch to new user
                                 session['username'] = new_username  # Update to registered username
                                 user_type = 'Member'
+                                points = 0
                                 message = "Registration successful! You are now a Member."
                 except psycopg.Error as e:
                     print(f"Database error during registration: {str(e)}")
