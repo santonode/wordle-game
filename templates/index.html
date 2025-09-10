@@ -102,7 +102,7 @@
             .header .user-info {
                 font-size: 12px;
                 padding: 1px 3px;
-                max-width: 100px;
+                max-width: 120px; /* Increased to accommodate points */
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -113,8 +113,8 @@
 <body>
     <div class="header">
         <h1>Wurdle</h1>
-        {% if username and user_type == 'Member' %}
-            <div class="user-info">{{ username }}</div>
+        {% if username and user_type == 'Member' and points is not none %}
+            <div class="user-info">{{ username }} {{ points }}pts</div>
         {% elif username %}
             <div class="user-info">guest</div>
         {% endif %}
@@ -210,6 +210,11 @@
             }
             if (data.message) {
                 document.getElementById('message').textContent = data.message;
+            }
+
+            // Reload page to update points after game
+            if (data.game_over) {
+                location.reload();
             }
         }
 
