@@ -132,6 +132,7 @@ def index():
     last_played = session.get('last_played_date')
     username = session.get('username')
     user_type = 'Guest'  # Default to Guest
+    points = 0  # Default points
     
     # Clear session if no guesses or new day, but preserve username if it exists
     if not session.get('guesses') or (last_played and last_played != today):
@@ -152,22 +153,22 @@ def index():
             except psycopg.Error as e:
                 print(f"Database error creating guest user: {str(e)}")
         else:
-            # Fetch user_type for existing username
+            # Fetch user_type and points for existing username
             try:
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
-                        cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
+                        cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
                         result = cur.fetchone()
                         if result:
-                            user_type = result[0]
+                            user_type, points = result
             except psycopg.Error as e:
                 print(f"Database error fetching user_type: {str(e)}")
 
     # Block only if the game was completed today for the current user
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type)
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None)
     
-    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type)
+    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None)
 
 @app.route('/wordlist')
 def wordlist():
@@ -176,13 +177,14 @@ def wordlist():
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('SELECT id FROM users WHERE username = %s', (username,))
-                    user_id = cur.fetchone()
-                    if user_id:
-                        user_id = user_id[0]
-                        cur.execute('UPDATE users SET points = GREATEST(points - 1, 0) WHERE id = %s', (user_id,))
-                        conn.commit()
-                        print(f"Debug - Deducted 1 point for user {username}, new points: {cur.fetchone()[0]}")
+                    cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
+                    result = cur.fetchone()
+                    if result:
+                        user_id, user_type = result
+                        if user_type != 'Guest':  # Deduct points only for non-guest users
+                            cur.execute('UPDATE users SET points = GREATEST(points - 1, 0) WHERE id = %s', (user_id,))
+                            conn.commit()
+                            print(f"Debug - Deducted 1 point for user {username}, new points: {cur.execute('SELECT points FROM users WHERE id = %s', (user_id,)).fetchone()[0]}")
         except psycopg.Error as e:
             print(f"Database error deducting point for wordlist: {str(e)}")
     return render_template('wordlist.html', words=WORDS)
