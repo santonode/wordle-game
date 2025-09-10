@@ -123,8 +123,19 @@
     <div class="content">
         {% if game_blocked %}
             <p id="blocked-message">{{ message }}</p>
+            <div style="text-align: center; margin: 10px 0;">
+                <a href="#" onclick="copyShareText(); return false;" style="margin-bottom: 5px;">Share Results</a>
+            </div>
+            <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
+                {% if share_text %}
+                    {{ share_text }} wurdle.santoelectronics.com
+                {% endif %}
+            </textarea>
             <a href="/wordlist">View Word List</a>
             <a href="/stats">View Stats</a>
+            <form method="post" action="/profile" style="display: inline;">
+                <button type="submit" name="clear_session">Clear Session</button>
+            </form>
         {% else %}
             <div id="game-board"></div>
             <div id="input-area">
@@ -202,19 +213,12 @@
 
             if (data.game_over) {
                 gameOver = true;
+                document.getElementById('message').textContent = data.message;
                 if (data.share_text) {
                     document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
                 } else {
                     console.log('No share_text received:', data);
                 }
-            }
-            if (data.message) {
-                document.getElementById('message').textContent = data.message;
-            }
-
-            // Reload page to update points after game
-            if (data.game_over) {
-                location.reload();
             }
         }
 
@@ -279,14 +283,12 @@
                 }
                 if (data.game_over) {
                     gameOver = true;
+                    document.getElementById('message').textContent = data.message;
                     if (data.share_text) {
                         document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
                     } else {
                         console.log('No share_text on initial load:', data);
                     }
-                }
-                if (data.message) {
-                    document.getElementById('message').textContent = data.message;
                 }
             });
         };
