@@ -46,6 +46,7 @@
             color: #FFCA28;
             padding: 2px 5px;
             line-height: 1;
+            text-decoration: none; /* Remove underline from link */
         }
         .header .gear-icon {
             position: absolute;
@@ -202,7 +203,7 @@
         {% if username and user_type == 'Member' and points is not none %}
             <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
         {% elif username %}
-            <a href="/" class="user-info">guest</a>
+            <a href="/" class="user-info">{{ username }}</a>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
