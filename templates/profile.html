@@ -37,6 +37,16 @@
             background-clip: text;
             color: transparent;
         }
+        .header .user-info {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #FFCA28;
+            padding: 2px 5px;
+            line-height: 1;
+        }
         .header .gear-icon {
             position: absolute;
             top: 5px;
@@ -175,17 +185,28 @@
                 width: 100%;
                 max-width: 150px;
             }
+            .header .user-info {
+                font-size: 12px;
+                padding: 1px 3px;
+                max-width: 120px; /* Increased to accommodate points */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Wurdle</h1>
+        {% if username and user_type == 'Member' and points is not none %}
+            <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
+        {% elif username %}
+            <a href="/" class="user-info">guest</a>
+        {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
-        <!-- Removed username title -->
-
         <!-- Existing Update Username Form -->
         <div class="form-group">
             <form method="POST" autocomplete="off">
