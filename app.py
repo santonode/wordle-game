@@ -164,11 +164,12 @@ def index():
             except psycopg.Error as e:
                 print(f"Database error fetching user_type: {str(e)}")
 
-    # Block only if the game was completed today for the current user
+    # Block only if the game was completed today for the current user, pass share_text
+    share_text = session.get('share_text') if session.get('game_over') else None
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None)
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text)
     
-    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None)
+    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text)
 
 @app.route('/wordlist')
 def wordlist():
@@ -439,6 +440,7 @@ def guess():
     today = str(date.today())
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
+    user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
     
     # Only create a guest user if no username exists and not logged in
     if not username:
@@ -457,6 +459,7 @@ def guess():
                     else:
                         cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
                         user_type = cur.fetchone()[0]
+                        session['user_type'] = user_type  # Update session with fetched user_type
                         if user_type == 'Guest':
                             print(f"Debug - Reusing existing guest user: {username}")
                         else:
@@ -554,15 +557,14 @@ def guess():
                     db_result = cur.fetchone()
                     if not db_result:
                         ip_address = request.remote_addr
-                        new_username = generate_username(ip_address)
-                        session['username'] = new_username
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                  (ip_address, new_username, 'Guest', 0))
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
+                                  (ip_address, username, user_type, 0))  # Use existing user_type
                         cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                         conn.commit()
-                        cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
+                        cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                         db_result = cur.fetchone()
                     user_id, user_type = db_result
+                    session['user_type'] = user_type  # Update session to match DB
                     if user_type != 'Guest':  # Ensure points are updated only for the intended user
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
                                   (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
@@ -583,12 +585,13 @@ def guess():
         except psycopg.Error as e:
             print(f"Database logging error: {str(e)}")
 
-    # Generate shareable result
+    # Generate and store shareable result in session
     share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
     for g in session['guesses']:
         share_text += ''.join({
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
         }[color] for color in g['result']) + '\n'
+    session['share_text'] = share_text  # Store for display
 
     print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}, username={username}")  # Add debugging
     return jsonify({
