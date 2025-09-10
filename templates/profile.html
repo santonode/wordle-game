@@ -208,21 +208,12 @@
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
-        <!-- Existing Update Username Form -->
-        <div class="form-group">
-            <form method="POST" autocomplete="off">
-                <label for="update-username">Update Username</label>
-                <div class="input-container">
-                    <input type="text" id="update-username" name="username" placeholder="New username (1-12 alphanumeric)" value="{{ username }}" required autocomplete="off">
-                    <button type="submit">Update</button> <!-- Changed to "Update" -->
-                </div>
-            </form>
-        </div>
+        <!-- Removed Update Username Form -->
 
-        <!-- Existing Clear Session Button -->
+        <!-- Updated Clear Session Button as First Form -->
         <div class="form-group">
             <form method="POST" autocomplete="off">
-                <div class="input-container"> <!-- Removed label -->
+                <div class="input-container">
                     <button type="submit" id="clear-session" name="clear_session" class="clear-session-btn">Clear Session</button>
                 </div>
             </form>
