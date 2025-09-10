@@ -131,7 +131,7 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     username = session.get('username')
-    user_type = 'Guest'  # Default to Guest
+    user_type = session.get('user_type', 'Guest')  # Default from session
     points = 0  # Default points
     
     # Clear session if no guesses or new day, but preserve username if it exists
@@ -161,6 +161,7 @@ def index():
                         result = cur.fetchone()
                         if result:
                             user_type, points = result
+                            session['user_type'] = user_type  # Update session
             except psycopg.Error as e:
                 print(f"Database error fetching user_type: {str(e)}")
 
@@ -243,16 +244,20 @@ def stats():
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     ip_address = request.remote_addr
-    user_type = 'Guest'
-    points = 0
-    if 'username' not in session or not session.get('username'):
+    username = session.get('username')
+    user_type = session.get('user_type', 'Guest')  # Default from session
+    points = 0  # Default points
+
+    if not username:
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT username, user_type, points FROM users WHERE ip_address = %s LIMIT 1', (ip_address,))
                     result = cur.fetchone()
                     if result:
-                        session['username'], user_type, points = result
+                        username, user_type, points = result
+                        session['username'] = username
+                        session['user_type'] = user_type
                     else:
                         username = generate_username(ip_address)
                         session['username'] = username
@@ -264,7 +269,20 @@ def profile():
                         points = 0
         except psycopg.Error as e:
             print(f"Database error initializing user: {str(e)}")
-            session['username'] = generate_username(ip_address)
+            username = generate_username(ip_address)
+            session['username'] = username
+
+    # Fetch current user details
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
+                result = cur.fetchone()
+                if result:
+                    user_type, points = result
+                    session['user_type'] = user_type  # Sync session with DB
+    except psycopg.Error as e:
+        print(f"Database error fetching user details: {str(e)}")
 
     wins = 0
     losses = 0
@@ -274,7 +292,7 @@ def profile():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT id FROM users WHERE username = %s', (session['username'],))
+                cur.execute('SELECT id FROM users WHERE username = %s', (username,))
                 user_id = cur.fetchone()[0]
                 cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
                 stats = cur.fetchone()
@@ -293,6 +311,7 @@ def profile():
             current_username = session.get('username')
             session.clear()
             session['username'] = current_username
+            session['user_type'] = user_type  # Preserve user_type
             session['guesses'] = []
             session['game_over'] = False
             session['hard_mode'] = False
@@ -313,7 +332,7 @@ def profile():
                                 if stored_password == hashed_password:
                                     session.clear()  # Always clear session on login
                                     session['username'] = username  # Update to registered username
-                                    user_type = stored_user_type  # Set to 'Member' for registered users
+                                    session['user_type'] = stored_user_type  # Set to 'Member' for registered users
                                     points = stored_points
                                     message = "Login successful!"
                                 else:
@@ -340,6 +359,7 @@ def profile():
                                 conn.commit()
                                 session.clear()  # Clear session on registration
                                 session['username'] = new_username  # Update to registered username
+                                session['user_type'] = 'Member'
                                 user_type = 'Member'
                                 points = 0
                                 message = "Registration successful! You are now a Member."
@@ -367,7 +387,7 @@ def profile():
             else:
                 message = "Username must be 1-12 alphanumeric characters."
 
-    return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+    return render_template('profile.html', username=session['username'], user_type=user_type, points=points, message=message, wins=wins, losses=losses, avg_guesses=avg_guesses)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
