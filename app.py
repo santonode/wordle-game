@@ -23,7 +23,8 @@ def init_db():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                # Ensure daily_word table exists with composite primary key
+                # Drop and recreate daily_word table to ensure schema
+                cur.execute('DROP TABLE IF EXISTS daily_word')
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
                         date TEXT NOT NULL,
@@ -91,20 +92,21 @@ def get_daily_word():
     today = str(date.today())
     word_list = session.get('word_list', 'words.txt')  # Default to words.txt
     available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
-    print(f"Attempting to connect to database with URL: {DATABASE_URL}")  # Debug
+    print(f"Attempting to get daily word for {today} with list {word_list}")
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT word FROM daily_word WHERE date = %s AND word_list = %s', (today, word_list))
                 result = cur.fetchone()
                 if result:
-                    print(f"Found word for {today} with list {word_list}: {result[0]}")
-                    return result[0]
+                    word = result[0]
+                    print(f"Found existing word: {word}")
+                    return word
                 else:
                     word = random.choice(available_words)
                     cur.execute('INSERT INTO daily_word (date, word_list, word) VALUES (%s, %s, %s)', (today, word_list, word))
                     conn.commit()
-                    print(f"Inserted new word for {today} with list {word_list}: {word}")
+                    print(f"Inserted new word: {word}")
                     return word
     except psycopg.Error as e:
         print(f"Database error in get_daily_word: {str(e)}")
@@ -620,6 +622,11 @@ def toggle_hard_mode():
     session['hard_mode'] = not session.get('hard_mode', False)
     session.modified = True
     return jsonify({'hard_mode': session['hard_mode']})
+
+# Handle favicon request to prevent 500 error (optional, add static file for best practice)
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('favicon.ico')  # Ensure static/favicon.ico exists
 
 if __name__ == '__main__':
     app.run(debug=True)
