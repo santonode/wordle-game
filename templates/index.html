@@ -259,20 +259,7 @@
                 return;
             }
             board.innerHTML = '';
-            if (!Array.isArray(guesses) || guesses.length === 0) {
-                // Initialize with 6 empty rows for a new game
-                for (let i = 0; i < 6; i++) {
-                    const row = document.createElement('div');
-                    row.className = 'row';
-                    for (let j = 0; j < 5; j++) {
-                        const tile = document.createElement('div');
-                        tile.className = 'tile';
-                        row.appendChild(tile);
-                    }
-                    board.appendChild(row);
-                }
-                console.log('Initialized empty board with 6 rows');
-            } else {
+            if (Array.isArray(guesses) && guesses.length > 0) {
                 guesses.forEach((g, rowIndex) => {
                     const row = document.createElement('div');
                     row.className = 'row';
@@ -295,6 +282,8 @@
                     }
                     board.appendChild(row);
                 });
+            } else {
+                console.log('No guesses to render, board remains empty');
             }
         }
 
@@ -313,7 +302,7 @@
         // Initial load of existing guesses from server-side session
         window.onload = () => {
             console.log('Window loaded, guesses:', guesses, 'gameOver:', gameOver); // Debug
-            renderBoard(); // Render any existing guesses or empty board
+            renderBoard(); // Render any existing guesses or leave empty if none
             if (gameOver) {
                 document.getElementById('message').textContent = document.getElementById('share-text').value ? 'Game completed!' : '';
                 if (document.getElementById('share-text').value) {
