@@ -3,113 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Wurdle</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Wurdle - Profile</title>
+    <link rel="stylesheet" href="/static/styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #263238;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        label {
-            font-weight: bold;
-            margin-right: 10px;
-        }
-        input, select {
-            padding: 5px;
-            margin-bottom: 10px;
+        .header {
+            position: fixed;
+            top: 0;
             width: 100%;
-            max-width: 200px;
-            box-sizing: border-box;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 5px 0; /* Reduced padding */
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000; /* Black border */
+            height: 45px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        button {
+        .header h1 {
+            margin: 0;
+            font-size: 28px; /* Reduced font size */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 10px; /* Reduced padding */
+            background: linear-gradient(45deg, #26A69A, #FFCA28); /* Teal to Yellow gradient */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header .user-info {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #FFCA28;
+            padding: 2px 5px;
+            line-height: 1;
+            text-decoration: none; /* Remove underline from link */
+        }
+        .header .gear-icon {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 16px; /* Reduced to ~50% of 24px */
+            text-decoration: none;
+            color: white;
+            background-color: #000000; /* Black background */
+            padding: 2px 4px; /* Padding for background */
+            border-radius: 4px; /* Rounded corners */
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 5px 0; /* Reduced padding */
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000; /* Black border */
+            height: 35px; /* Fixed height to match content push */
+            box-sizing: border-box; /* Include padding in height */
+        }
+        .footer p {
+            margin: 3px 0;
+            font-size: 12px; /* Reduced font size */
+        }
+        .content {
+            margin-top: 50px; /* Increased to ensure clearance */
+            margin-bottom: 40px; /* Adjusted for footer */
+            min-height: calc(100vh - 85px); /* Adjusted for header (45px) + footer (35px) + borders (5px) */
+            padding-top: 5px; /* Additional padding to push content down */
+            text-align: center;
+            padding-bottom: 60px; /* Added space for button and future content */
+        }
+        .form-group {
+            margin: 15px 0; /* Space between form groups */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            text-align: center; /* Center the label text */
+            width: 150px; /* Fixed width for label to control offset */
+            margin-right: auto; /* Shift label to the left of centered inputs */
+            margin-left: 20px; /* Additional left offset for visual separation */
+        }
+        .form-group .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-group input {
+            padding: 5px;
+            font-size: 16px;
+            width: 200px; /* Fixed width to control size */
+            box-sizing: border-box;
+            margin-bottom: 5px; /* Space between inputs */
+        }
+        .form-group button {
             padding: 5px 10px;
+            font-size: 16px;
             background-color: #26A69A;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
+            width: 200px; /* Match input width */
         }
-        button:hover {
-            background-color: #2bbbad;
+        .form-group button:hover {
+            background-color: #1e7d71;
         }
-        .stats {
-            text-align: center;
+        .clear-session-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
             font-size: 16px;
+            background-color: #FF4444; /* Red color for temporary feature */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 200px; /* Match input width */
+        }
+        .clear-session-btn:hover {
+            background-color: #CC0000; /* Darker red on hover */
         }
         .message {
-            text-align: center;
-            color: #d32f2f;
-            margin-bottom: 10px;
+            margin-top: 10px;
+            color: #FFCA28;
+        }
+        .back-button {
+            position: absolute;
+            bottom: 60px; /* Position above footer with space */
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #26A69A;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .back-button:hover {
+            background-color: #1e7d71;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .content {
+                padding: 0 10px; /* Prevent edge clipping */
+            }
+            .form-group label {
+                width: 100%; /* Full width on mobile */
+                max-width: 150px; /* Limit max width */
+                margin-left: 0; /* Remove offset on mobile for simplicity */
+                text-align: center; /* Ensure centered on mobile */
+            }
+            .form-group .input-container {
+                width: 100%;
+            }
+            .form-group input {
+                width: 100%; /* Full width on mobile */
+                max-width: 250px; /* Limit max width */
+            }
+            .form-group button {
+                width: 100%;
+                max-width: 150px;
+            }
+            .clear-session-btn {
+                width: 100%;
+                max-width: 150px;
+            }
+            .header .user-info {
+                font-size: 12px;
+                padding: 1px 3px;
+                max-width: 120px; /* Increased to accommodate points */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Profile</h2>
+    <div class="header">
+        <h1>Wurdle</h1>
+        {% if username and user_type == 'Member' and points is not none %}
+            <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
+        {% elif username %}
+            <a href="/" class="user-info">{{ username }}</a>
+        {% endif %}
+        <a href="/profile" class="gear-icon">⚙️</a>
+    </div>
+    <div class="content">
+        <!-- Removed Update Username Form -->
+
+        <!-- Updated Clear Session Button as First Form -->
+        <div class="form-group">
+            <form method="POST" autocomplete="off">
+                <div class="input-container">
+                    <button type="submit" id="clear-session" name="clear_session" class="clear-session-btn">Clear Session</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- New Register Form -->
+        <div class="form-group">
+            <form method="POST" autocomplete="off">
+                <label for="register-username">Register New User</label>
+                <div class="input-container">
+                    <input type="text" id="register-username" name="register_username" placeholder="New username" required autocomplete="off">
+                    <input type="password" id="register-password" name="register_password" placeholder="New password" required autocomplete="off">
+                    <button type="submit" name="register">Register</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- New Login Form with Session Update -->
+        <div class="form-group">
+            <form method="POST" autocomplete="off">
+                <label for="login-username">Login</label>
+                <div class="input-container">
+                    <input type="text" id="login-username" name="login_username" placeholder="Username" required autocomplete="off">
+                    <input type="password" id="login-password" name="login_password" placeholder="Password" required autocomplete="off">
+                    <input type="hidden" name="switch_user" value="1"> <!-- Hidden field to trigger session switch -->
+                    <button type="submit" name="login">Login</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- New Word List Selection Form -->
+        <div class="form-group">
+            <form method="POST" autocomplete="off">
+                <label for="word_list">Change Word List</label>
+                <div class="input-container">
+                    <select id="word_list" name="word_list" style="padding: 5px; font-size: 16px; width: 200px; box-sizing: border-box; margin-bottom: 5px;">
+                        <option value="words.txt" {% if word_list == 'words.txt' %}selected{% endif %}>All - words.txt</option>
+                        <option value="words-pets.txt" {% if word_list == 'words-pets.txt' %}selected{% endif %}>Pets - words-pets.txt</option>
+                    </select>
+                    <button type="submit" name="change_word_list">Change Word List</button>
+                </div>
+            </form>
+        </div>
+
         {% if message %}
             <div class="message">{{ message }}</div>
         {% endif %}
-        <div class="section">
-            <p>Username: {{ username }}</p>
-            <p>User Type: {{ user_type }}</p>
-            {% if user_type != 'Guest' and points is not none %}
-                <p>Points: {{ points }}</p>
-            {% endif %}
-            <p>Stats - Wins: {{ wins }}, Losses: {{ losses }}, Avg Guesses: {{ avg_guesses }}</p>
-        </div>
-        <div class="section">
-            <form method="post" action="">
-                <h3>Login</h3>
-                <label for="login_username">Username:</label>
-                <input type="text" id="login_username" name="login_username" required>
-                <label for="login_password">Password:</label>
-                <input type="password" id="login_password" name="login_password" required>
-                <button type="submit" name="login">Login</button>
-            </form>
-        </div>
-        <div class="section">
-            <form method="post" action="">
-                <h3>Register</h3>
-                <label for="register_username">Username (1-12 alphanumeric):</label>
-                <input type="text" id="register_username" name="register_username" pattern="[A-Za-z0-9]{1,12}" required>
-                <label for="register_password">Password:</label>
-                <input type="password" id="register_password" name="register_password" required>
-                <button type="submit" name="register">Register</button>
-            </form>
-        </div>
-        <div class="section">
-            <form method="post" action="">
-                <h3>Change Word List</h3>
-                <label for="word_list">Select Word List:</label>
-                <select id="word_list" name="word_list">
-                    <option value="words.txt" {% if word_list == 'words.txt' %}selected{% endif %}>All - words.txt</option>
-                    <option value="words-pets.txt" {% if word_list == 'words-pets.txt' %}selected{% endif %}>Pets - words-pets.txt</option>
-                </select>
-                <button type="submit" name="change_word_list">Change Word List</button>
-            </form>
-        </div>
-        <div class="section">
-            <form method="post" action="">
-                <button type="submit" name="clear_session">Clear Session</button>
-            </form>
-        </div>
+    </div>
+    <a href="/" class="back-button">Back to Game</a>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends!</p>
     </div>
 </body>
 </html>
