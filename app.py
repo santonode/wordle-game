@@ -23,7 +23,7 @@ def init_db():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                # Ensure daily_word table exists
+                # Ensure daily_word table exists with composite primary key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
                         date TEXT NOT NULL,
@@ -51,11 +51,10 @@ def init_db():
                         username TEXT UNIQUE,
                         user_type TEXT DEFAULT 'Guest',
                         points INTEGER DEFAULT 0,
-                        password TEXT
+                        password TEXT,
+                        word_list TEXT DEFAULT 'words.txt'
                     )
                 ''')
-                # Add word_list column if not exists
-                cur.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS word_list TEXT DEFAULT \'words.txt\'')
                 # Ensure user_stats table exists with foreign key on id
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
@@ -76,38 +75,43 @@ def init_db():
         print(f"Unexpected error during initialization: {str(e)}")
         raise
 
-# Load word list
+# Load word lists
 try:
     with open('words.txt', 'r') as f:
-        WORDS = [word.strip().upper() for word in f.readlines()]
-except FileNotFoundError:
-    print("Error: words.txt not found")
-    WORDS = ['APPLE', 'BREAD', 'CLOUD', 'DREAM']  # Fallback list
+        WORDS_ALL = [word.strip().upper() for word in f.readlines()]
+    with open('words-pets.txt', 'r') as f:
+        WORDS_PETS = [word.strip().upper() for word in f.readlines()]
+except FileNotFoundError as e:
+    print(f"Error: {str(e)}")
+    WORDS_ALL = ['APPLE', 'BREAD', 'CLOUD', 'DREAM']  # Fallback list
+    WORDS_PETS = ['DOG', 'CAT', 'BIRD', 'FISH']  # Fallback list
 
-# Get or set daily word
+# Get or set daily word based on selected word list
 def get_daily_word():
     today = str(date.today())
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
+    available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
     print(f"Attempting to connect to database with URL: {DATABASE_URL}")  # Debug
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT word FROM daily_word WHERE date = %s', (today,))
+                cur.execute('SELECT word FROM daily_word WHERE date = %s AND word_list = %s', (today, word_list))
                 result = cur.fetchone()
                 if result:
-                    print(f"Found word for {today}: {result[0]}")
+                    print(f"Found word for {today} with list {word_list}: {result[0]}")
                     return result[0]
                 else:
-                    word = random.choice(WORDS)
-                    cur.execute('INSERT INTO daily_word (date, word) VALUES (%s, %s)', (today, word))
+                    word = random.choice(available_words)
+                    cur.execute('INSERT INTO daily_word (date, word_list, word) VALUES (%s, %s, %s)', (today, word_list, word))
                     conn.commit()
-                    print(f"Inserted new word for {today}: {word}")
+                    print(f"Inserted new word for {today} with list {word_list}: {word}")
                     return word
     except psycopg.Error as e:
         print(f"Database error in get_daily_word: {str(e)}")
-        return random.choice(WORDS)  # Fallback to random word
+        return random.choice(available_words)  # Fallback to random word
     except Exception as e:
         print(f"Unexpected error in get_daily_word: {str(e)}")
-        return random.choice(WORDS)  # Fallback to random word
+        return random.choice(available_words)  # Fallback to random word
 
 # Generate username based on IP and session data
 def generate_username(ip_address):
@@ -135,24 +139,65 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     username = session.get('username')
+    user_type = session.get('user_type', 'Guest')  # Default from session
+    points = 0  # Default points
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
     
-    # Clear session if no guesses or new day
+    # Clear session if no guesses or new day, but preserve username if it exists
     if not session.get('guesses') or (last_played and last_played != today):
-        session.clear()
         session['guesses'] = []
         session['game_over'] = False
         session['hard_mode'] = False
         session['last_played_date'] = today if not last_played else None
+        if not username:
+            ip_address = request.remote_addr
+            username = generate_username(ip_address)
+            session['username'] = username
+            print(f"Debug - New username generated: {username}")  # Debug
+            # No database write here, only set in session
+        else:
+            # Fetch user_type, points, and word_list for existing username if already in DB
+            try:
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('SELECT user_type, points, word_list FROM users WHERE username = %s', (username,))
+                        result = cur.fetchone()
+                        if result:
+                            user_type, points, db_word_list = result
+                            session['user_type'] = user_type  # Update session
+                            session['word_list'] = db_word_list  # Update session with word list
+                            print(f"Debug - Fetched user_type: {user_type}, points: {points}, word_list: {db_word_list} for {username}")
+            except psycopg.Error as e:
+                print(f"Database error fetching user_type: {str(e)}")
 
-    # Block only if the game was completed today for the current user
+    # Block only if the game was completed today for the current user, pass share_text
+    share_text = session.get('share_text') if session.get('game_over') else None
+    print(f"Debug - Session guesses: {session.get('guesses')}, game_over: {session.get('game_over')}")  # Debug
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!")
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username, user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False), word_list=word_list)
     
-    return render_template('index.html', game_blocked=False)
+    return render_template('index.html', game_blocked=False, username=username, user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False), word_list=word_list)
 
 @app.route('/wordlist')
 def wordlist():
-    return render_template('wordlist.html', words=WORDS)
+    username = session.get('username')
+    if username:
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
+                    result = cur.fetchone()
+                    if result:
+                        user_id, user_type = result
+                        if user_type != 'Guest':  # Deduct points only for non-guest users
+                            cur.execute('UPDATE users SET points = GREATEST(points - 1, 0) WHERE id = %s', (user_id,))
+                            conn.commit()
+                            print(f"Debug - Deducted 1 point for user {username}, new points: {cur.execute('SELECT points FROM users WHERE id = %s', (user_id,)).fetchone()[0]}")
+        except psycopg.Error as e:
+            print(f"Database error deducting point for wordlist: {str(e)}")
+    word_list = session.get('word_list', 'words.txt')
+    words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
+    return render_template('wordlist.html', words=words)
 
 @app.route('/stats')
 def stats():
@@ -207,28 +252,28 @@ def stats():
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     ip_address = request.remote_addr
-    user_type = 'Guest'
-    points = 0
-    if 'username' not in session or not session.get('username'):
+    username = session.get('username')
+    user_type = session.get('user_type', 'Guest')  # Default from session
+    points = 0  # Default points
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
+
+    if not username:
+        username = generate_username(ip_address)
+        session['username'] = username
+        # No database write here, only set in session
+    else:
+        # Fetch user_type, points, and word_list for existing username if already in DB
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('SELECT username, user_type, points FROM users WHERE ip_address = %s LIMIT 1', (ip_address,))
+                    cur.execute('SELECT user_type, points, word_list FROM users WHERE username = %s', (username,))
                     result = cur.fetchone()
                     if result:
-                        session['username'], user_type, points = result
-                    else:
-                        username = generate_username(ip_address)
-                        session['username'] = username
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                  (ip_address, username, 'Guest', 0))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-                        user_type = 'Guest'
-                        points = 0
+                        user_type, points, db_word_list = result
+                        session['user_type'] = user_type  # Update session
+                        session['word_list'] = db_word_list  # Update session with word list
         except psycopg.Error as e:
-            print(f"Database error initializing user: {str(e)}")
-            session['username'] = generate_username(ip_address)
+            print(f"Database error fetching user_type: {str(e)}")
 
     wins = 0
     losses = 0
@@ -238,16 +283,18 @@ def profile():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT id FROM users WHERE username = %s', (session['username'],))
-                user_id = cur.fetchone()[0]
-                cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
-                stats = cur.fetchone()
-                if stats:
-                    wins, losses, total_guesses, games_played = stats
-                    avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
-                else:
-                    cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
-                    conn.commit()
+                cur.execute('SELECT id FROM users WHERE username = %s', (username,))
+                user_id = cur.fetchone()
+                if user_id:
+                    user_id = user_id[0]
+                    cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
+                    stats = cur.fetchone()
+                    if stats:
+                        wins, losses, total_guesses, games_played = stats
+                        avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
+                    else:
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
+                        conn.commit()
     except psycopg.Error as e:
         print(f"Database error fetching stats: {str(e)}")
 
@@ -257,6 +304,8 @@ def profile():
             current_username = session.get('username')
             session.clear()
             session['username'] = current_username
+            session['user_type'] = user_type  # Preserve user_type
+            session['word_list'] = word_list  # Preserve word_list
             session['guesses'] = []
             session['game_over'] = False
             session['hard_mode'] = False
@@ -270,14 +319,15 @@ def profile():
                         with conn.cursor() as cur:
                             hashed_password = hash_password(password)
                             print(f"Attempting login for {username} with hashed password: {hashed_password}")
-                            cur.execute('SELECT user_type, points, password FROM users WHERE username = %s', (username,))
+                            cur.execute('SELECT user_type, points, password, word_list FROM users WHERE username = %s', (username,))
                             result = cur.fetchone()
                             if result:
-                                stored_user_type, stored_points, stored_password = result
+                                stored_user_type, stored_points, stored_password, stored_word_list = result
                                 if stored_password == hashed_password:
-                                    session.clear()
-                                    session['username'] = username
-                                    stored_user_type, stored_points = result
+                                    session.clear()  # Always clear session on login
+                                    session['username'] = username  # Update to registered username
+                                    session['user_type'] = stored_user_type  # Set to 'Member' for registered users
+                                    session['word_list'] = stored_word_list  # Set to stored word list
                                     points = stored_points
                                     message = "Login successful!"
                                 else:
@@ -298,38 +348,38 @@ def profile():
                             if cur.fetchone():
                                 message = "Username already taken."
                             else:
-                                cur.execute('INSERT INTO users (ip_address, username, password, user_type, points) VALUES (%s, %s, %s, %s, %s)', 
-                                          (ip_address, new_username, hash_password(new_password), 'Member', 0))
+                                cur.execute('INSERT INTO users (ip_address, username, password, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s, %s)', 
+                                          (ip_address, new_username, hash_password(new_password), 'Member', 0, 'words.txt'))
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
-                                session['username'] = new_username
+                                session.clear()  # Clear session on registration
+                                session['username'] = new_username  # Update to registered username
+                                session['user_type'] = 'Member'
+                                session['word_list'] = 'words.txt'  # Default word list for new users
                                 user_type = 'Member'
+                                points = 0
                                 message = "Registration successful! You are now a Member."
                 except psycopg.Error as e:
                     print(f"Database error during registration: {str(e)}")
                     message = "Error during registration."
-        else:
-            new_username = request.form.get('username', '').strip()
-            if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+        elif 'change_word_list' in request.form:
+            new_word_list = request.form.get('word_list')
+            if new_word_list in ['words.txt', 'words-pets.txt']:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
-                            cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s AND username = %s', 
-                                      (new_username, 'Member', ip_address, session['username']))
-                            if cur.rowcount > 0:
-                                session['username'] = new_username
-                                user_type = 'Member'
-                                message = "Username updated successfully!"
-                            else:
-                                message = "No user found to update with this IP and username."
-                        conn.commit()
+                            cur.execute('UPDATE users SET word_list = %s WHERE username = %s', (new_word_list, username))
+                            conn.commit()
+                            session['word_list'] = new_word_list  # Update session
+                            session['guesses'] = []  # Clear guesses to reset game
+                            session['game_over'] = False
+                            session['last_played_date'] = None  # Allow new game
+                            message = f"Word list changed to {new_word_list.split('-')[0] if '-' in new_word_list else new_word_list}. Game reset!"
                 except psycopg.Error as e:
-                    print(f"Database error updating username: {str(e)}")
-                    message = f"Error updating username: {str(e)}"
-            else:
-                message = "Username must be 1-12 alphanumeric characters."
+                    print(f"Database error changing word list: {str(e)}")
+                    message = "Error changing word list."
 
-    return render_template('profile.html', username=session['username'], message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, user_type=user_type, points=points)
+    return render_template('profile.html', username=session['username'], user_type=user_type, points=points, message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, word_list=word_list)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -403,10 +453,11 @@ def guess():
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
     user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
+    ip_address = request.remote_addr  # Define ip_address at the start of the route
+    word_list = session.get('word_list', 'words.txt')  # Get current word list
     
     # Initialize guest user in database only if not already present
     if not username:
-        ip_address = request.remote_addr
         username = generate_username(ip_address)
         session['username'] = username
     try:
@@ -414,14 +465,15 @@ def guess():
             with conn.cursor() as cur:
                 cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
                 if not cur.fetchone():
-                    cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
-                              (ip_address, username, 'Guest', 0))
+                    cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
+                              (ip_address, username, 'Guest', 0, word_list))
                     cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                     conn.commit()
                 else:
-                    cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
-                    user_type = cur.fetchone()[0]
-                    session['user_type'] = user_type  # Update session with fetched user_type
+                    cur.execute('SELECT user_type, word_list FROM users WHERE username = %s', (username,))
+                    user_type, db_word_list = cur.fetchone()
+                    session['user_type'] = user_type  # Update session
+                    session['word_list'] = db_word_list  # Update session with word list
     except psycopg.Error as e:
         print(f"Database error creating or fetching guest user: {str(e)}")
         return jsonify({'error': 'Database error. Please try again later.'})
@@ -438,9 +490,10 @@ def guess():
     target = get_daily_word()
     print(f"Debug - Target word: {target}, username: {username}")  # Add target for debugging
 
-    if len(guess) != 5 or guess not in WORDS:
-        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in WORDS}, username: {username}")  # Add debugging
-        return jsonify({'error': 'Invalid word. Must be a 5-letter word from the list.'})
+    available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
+    if len(guess) != 5 or guess not in available_words:
+        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in available_words}, username: {username}")  # Add debugging
+        return jsonify({'error': 'Invalid word. Must be a 5-letter word from the selected list.'})
 
     # Hard Mode: Check if guess uses all known green/yellow letters
     if hard_mode:
@@ -516,8 +569,8 @@ def guess():
                     if db_result:
                         user_id, user_type = db_result
                     else:
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
-                                  (ip_address, username, user_type, 0))  # Use existing user_type
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
+                                  (ip_address, username, user_type, 0, word_list))
                         cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                         conn.commit()
                         cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
