@@ -42,7 +42,7 @@ def init_db():
                         guesses INTEGER
                     )
                 ''')
-                # Ensure users table exists with id as primary key
+                # Ensure users table exists with id as primary key and add word_list column if not exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id SERIAL PRIMARY KEY,
@@ -50,9 +50,12 @@ def init_db():
                         username TEXT UNIQUE,
                         user_type TEXT DEFAULT 'Guest',
                         points INTEGER DEFAULT 0,
-                        password TEXT,
-                        word_list TEXT DEFAULT 'words.txt'
+                        password TEXT
                     )
+                ''')
+                # Add word_list column if it doesn't exist
+                cur.execute('''
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS word_list TEXT DEFAULT 'words.txt'
                 ''')
                 # Ensure user_stats table exists with foreign key on id
                 cur.execute('''
