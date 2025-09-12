@@ -121,20 +121,21 @@
             gap: 20px;
         }
 
-        /* Mobile adjustments */
+        /* Mobile adjustments - optional reduction for smaller screens */
         @media (max-width: 600px) {
             .header .user-info {
                 font-size: 12px;
                 padding: 1px 3px;
-                max-width: 120px; /* Increased to accommodate points */
+                max-width: 120px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
+            /* Optional: Reduce tile size slightly on mobile if needed */
             .tile {
-                width: 30px;
-                height: 30px;
-                font-size: 14px;
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
             }
         }
     </style>
