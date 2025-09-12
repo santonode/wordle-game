@@ -82,30 +82,6 @@
             min-height: calc(100vh - 85px);
             padding-top: 5px;
         }
-        #game-board {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 20px 0;
-        }
-        .row {
-            display: flex;
-            gap: 2px; /* Reduced from 5px to 2px */
-            margin-bottom: 5px;
-        }
-        .tile {
-            width: 60px;
-            height: 60px;
-            border: 2px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px; /* Increased font size to match larger tiles */
-            font-weight: bold;
-        }
-        .tile.green { background-color: #6aa84f; color: white; border-color: #6aa84f; }
-        .tile.yellow { background-color: #ffb900; color: white; border-color: #ffb900; }
-        .tile.gray { background-color: #757575; color: white; border-color: #757575; }
         #input-area {
             margin: 20px 0;
             display: flex;
@@ -120,25 +96,24 @@
             justify-content: center;
             gap: 20px;
         }
+        #word-list-info {
+            font-size: 14px;
+            color: #26A69A;
+            margin-bottom: 10px;
+        }
 
-        /* Mobile adjustments - optional reduction for smaller screens */
+        /* Mobile adjustments */
         @media (max-width: 600px) {
             .header .user-info {
                 font-size: 12px;
                 padding: 1px 3px;
-                max-width: 120px;
+                max-width: 120px; /* Increased to accommodate points */
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            /* Reduce tile size slightly on mobile if needed */
-            .tile {
-                width: 50px;
-                height: 50px;
-                font-size: 22px;
-            }
-            .row {
-                gap: 2px; /* Maintain reduced gap on mobile */
+            #word-list-info {
+                font-size: 12px;
             }
         }
     </style>
@@ -164,14 +139,20 @@
                     {{ share_text }} wurdle.santoelectronics.com
                 {% endif %}
             </textarea>
-            <a href="/wordlist">View Word List</a>
-            <a href="/stats">View Stats</a>
-            <form method="post" action="/profile" style="display: inline;">
+            <div class="link-row">
+                <a href="/wordlist">View Word List</a>
+                <a href="/stats">View Stats</a>
+            </div>
+            <form method="post" action="/profile" style="display: inline; margin-top: 10px;">
                 <button type="submit" name="clear_session">Clear Session</button>
             </form>
         {% else %}
             <div id="game-board"></div>
             <div id="input-area">
+                <div id="word-list-info">
+                    Current Word List: {% if word_list == 'words.txt' %}All{% else %}Pets{% endif %}
+                    (<a href="/profile">Change</a>)
+                </div>
                 <div class="input-row">
                     <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" style="width: 150px; padding: 5px; font-size: 16px;" oninput="this.value = this.value.toUpperCase().slice(0, 5);">
                     <button onclick="submitGuess()">Submit</button>
@@ -198,8 +179,8 @@
     </div>
 
     <script>
-        let guesses = {{ guesses|tojson|safe if guesses else '[]' }};
-        let gameOver = {{ game_over|tojson|safe if game_over else 'false' }};
+        let guesses = [];
+        let gameOver = false;
 
         async function submitGuess() {
             const input = document.getElementById('guess-input')?.value.toUpperCase();
@@ -257,37 +238,30 @@
 
         function renderBoard() {
             const board = document.getElementById('game-board');
-            if (!board) {
-                console.error('Game board element not found');
-                return;
-            }
+            if (!board) return;
             board.innerHTML = '';
-            if (Array.isArray(guesses) && guesses.length > 0) {
-                guesses.forEach((g, rowIndex) => {
-                    const row = document.createElement('div');
-                    row.className = 'row';
-                    for (let i = 0; i < 5; i++) {
-                        const tile = document.createElement('div');
-                        tile.className = 'tile';
-                        if (g.guess && i < g.guess.length) tile.textContent = g.guess[i];
-                        // Enhanced debug log
-                        console.log(`Row ${rowIndex}, Col ${i}: result[${i}] = ${g.result[i]}, classList before:`, tile.classList);
-                        // Assign class based on result, default to gray if undefined
-                        if (g.result && g.result[i] === 'green') {
-                            tile.classList.add('green');
-                        } else if (g.result && g.result[i] === 'yellow') {
-                            tile.classList.add('yellow');
-                        } else {
-                            tile.classList.add('gray');
-                        }
-                        console.log(`Row ${rowIndex}, Col ${i}: classList after:`, tile.classList); // Log after adding class
-                        row.appendChild(tile);
+            guesses.forEach((g, rowIndex) => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let i = 0; i < 5; i++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.textContent = g.guess[i];
+                    // Enhanced debug log
+                    console.log(`Row ${rowIndex}, Col ${i}: result[${i}] = ${g.result[i]}, classList before:`, tile.classList);
+                    // Assign class based on result, default to gray if undefined
+                    if (g.result[i] === 'green') {
+                        tile.classList.add('green');
+                    } else if (g.result[i] === 'yellow') {
+                        tile.classList.add('yellow');
+                    } else {
+                        tile.classList.add('gray');
                     }
-                    board.appendChild(row);
-                });
-            } else {
-                console.log('No guesses to render, board remains empty');
-            }
+                    console.log(`Row ${rowIndex}, Col ${i}: classList after:`, tile.classList); // Log after adding class
+                    row.appendChild(tile);
+                }
+                board.appendChild(row);
+            });
         }
 
         function copyShareText() {
@@ -302,16 +276,35 @@
             if (e.key === 'Enter') submitGuess();
         });
 
-        // Initial load of existing guesses from server-side session
+        // Initial load of existing guesses
         window.onload = () => {
-            console.log('Window loaded, guesses:', guesses, 'gameOver:', gameOver); // Debug
-            renderBoard(); // Render any existing guesses or leave empty if none
-            if (gameOver) {
-                document.getElementById('message').textContent = document.getElementById('share-text').value ? 'Game completed!' : '';
-                if (document.getElementById('share-text').value) {
-                    document.getElementById('share-text').value += ' wurdle.santoelectronics.com';
+            fetch('/guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guess: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Initial load response:', data); // Debug log
+                if (data.guesses) {
+                    guesses = data.guesses.map(g => ({
+                        guess: g.guess,
+                        result: Array.isArray(g.result) && g.result.length === 5
+                            ? g.result.map(r => (r === 'green' || r === 'yellow' || r === 'gray' ? r : 'gray'))
+                            : ['gray', 'gray', 'gray', 'gray', 'gray']
+                    }));
+                    renderBoard();
                 }
-            }
+                if (data.game_over) {
+                    gameOver = true;
+                    document.getElementById('message').textContent = data.message;
+                    if (data.share_text) {
+                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
+                    } else {
+                        console.log('No share_text on initial load:', data);
+                    }
+                }
+            });
         };
     </script>
 </body>
