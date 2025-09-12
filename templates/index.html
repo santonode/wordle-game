@@ -165,8 +165,8 @@
     </div>
 
     <script>
-        let guesses = [];
-        let gameOver = false;
+        let guesses = {{ guesses|tojson|safe if guesses else '[]' }};
+        let gameOver = {{ game_over|tojson|safe if game_over else 'false' }};
 
         async function submitGuess() {
             const input = document.getElementById('guess-input')?.value.toUpperCase();
@@ -262,35 +262,15 @@
             if (e.key === 'Enter') submitGuess();
         });
 
-        // Initial load of existing guesses
+        // Initial load of existing guesses from server-side session
         window.onload = () => {
-            fetch('/guess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess: '' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Initial load response:', data); // Debug log
-                if (data.guesses) {
-                    guesses = data.guesses.map(g => ({
-                        guess: g.guess,
-                        result: Array.isArray(g.result) && g.result.length === 5
-                            ? g.result.map(r => (r === 'green' || r === 'yellow' || r === 'gray' ? r : 'gray'))
-                            : ['gray', 'gray', 'gray', 'gray', 'gray']
-                    }));
-                    renderBoard();
+            renderBoard(); // Render any existing guesses from session
+            if (gameOver) {
+                document.getElementById('message').textContent = document.getElementById('share-text').value ? 'Game completed!' : '';
+                if (document.getElementById('share-text').value) {
+                    document.getElementById('share-text').value += ' wurdle.santoelectronics.com';
                 }
-                if (data.game_over) {
-                    gameOver = true;
-                    document.getElementById('message').textContent = data.message;
-                    if (data.share_text) {
-                        document.getElementById('share-text').value = data.share_text + ' wurdle.santoelectronics.com';
-                    } else {
-                        console.log('No share_text on initial load:', data);
-                    }
-                }
-            });
+            }
         };
     </script>
 </body>
