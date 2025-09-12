@@ -161,9 +161,9 @@ def index():
     # Block only if the game was completed today for the current user, pass share_text
     share_text = session.get('share_text') if session.get('game_over') else None
     if username and session.get('last_played_date') == today and session.get('game_over', False):
-        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text)
+        return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False))
     
-    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text)
+    return render_template('index.html', game_blocked=False, username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False))
 
 @app.route('/wordlist')
 def wordlist():
@@ -418,28 +418,27 @@ def guess():
     username = session.get('username')
     user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
     
-    # Only create a guest user in the database on the first valid guess
+    # Initialize guest user in database only if not already present
     if not username:
         ip_address = request.remote_addr
         username = generate_username(ip_address)
         session['username'] = username
-    else:
-        # Check if user exists in DB, create if not on first guess
-        try:
-            with psycopg.connect(DATABASE_URL) as conn:
-                with conn.cursor() as cur:
-                    cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
-                    if not cur.fetchone():
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
-                                  (ip_address, username, 'Guest', 0))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-                    else:
-                        cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
-                        user_type = cur.fetchone()[0]
-                        session['user_type'] = user_type  # Update session with fetched user_type
-        except psycopg.Error as e:
-            print(f"Database error creating guest user: {str(e)}")
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
+                if not cur.fetchone():
+                    cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
+                              (ip_address, username, 'Guest', 0))
+                    cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                    conn.commit()
+                else:
+                    cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
+                    user_type = cur.fetchone()[0]
+                    session['user_type'] = user_type  # Update session with fetched user_type
+    except psycopg.Error as e:
+        print(f"Database error creating or fetching guest user: {str(e)}")
+        return jsonify({'error': 'Database error. Please try again later.'})
 
     if session.get('last_played_date') == today and session.get('game_over', False):
         return jsonify({'error': 'You have already played today. Use \'Clear Session\' to test again!'})
@@ -528,14 +527,6 @@ def guess():
                 with conn.cursor() as cur:
                     cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                     db_result = cur.fetchone()
-                    if not db_result:
-                        ip_address = request.remote_addr
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
-                                  (ip_address, username, user_type, 0))  # Use existing user_type
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-                        cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
-                        db_result = cur.fetchone()
                     user_id, user_type = db_result
                     session['user_type'] = user_type  # Update session to match DB
                     if user_type != 'Guest':  # Ensure points are updated only for the intended user
