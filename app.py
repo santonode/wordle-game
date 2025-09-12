@@ -420,10 +420,10 @@ def guess():
     print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
     user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
+    ip_address = request.remote_addr  # Define ip_address at the start of the route
     
     # Initialize guest user in database only if not already present
     if not username:
-        ip_address = request.remote_addr
         username = generate_username(ip_address)
         session['username'] = username
     try:
@@ -533,7 +533,6 @@ def guess():
                     if db_result:
                         user_id, user_type = db_result
                     else:
-                        ip_address = request.remote_addr
                         cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
                                   (ip_address, username, user_type, 0))
                         cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
@@ -543,7 +542,7 @@ def guess():
                     session['user_type'] = user_type  # Update session to match DB
                     if user_type != 'Guest':  # Ensure points are updated only for the intended user
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
-                                  (datetime.now(), request.remote_addr, username, win, len(session['guesses'])))
+                                  (datetime.now(), ip_address, username, win, len(session['guesses'])))
                         cur.execute('''
                             INSERT INTO user_stats (user_id, wins, losses, total_guesses, games_played)
                             VALUES (%s, %s, %s, %s, 1)
