@@ -144,6 +144,7 @@ def index():
             ip_address = request.remote_addr
             username = generate_username(ip_address)
             session['username'] = username
+            print(f"Debug - New username generated: {username}")  # Debug
             # No database write here, only set in session
         else:
             # Fetch user_type and points for existing username if already in DB
@@ -155,11 +156,13 @@ def index():
                         if result:
                             user_type, points = result
                             session['user_type'] = user_type  # Update session
+                            print(f"Debug - Fetched user_type: {user_type}, points: {points} for {username}")
             except psycopg.Error as e:
                 print(f"Database error fetching user_type: {str(e)}")
 
     # Block only if the game was completed today for the current user, pass share_text
     share_text = session.get('share_text') if session.get('game_over') else None
+    print(f"Debug - Session guesses: {session.get('guesses')}, game_over: {session.get('game_over')}")  # Debug
     if username and session.get('last_played_date') == today and session.get('game_over', False):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username if user_type == 'Member' else 'guest', user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False))
     
@@ -527,7 +530,16 @@ def guess():
                 with conn.cursor() as cur:
                     cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                     db_result = cur.fetchone()
-                    user_id, user_type = db_result
+                    if db_result:
+                        user_id, user_type = db_result
+                    else:
+                        ip_address = request.remote_addr
+                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)',
+                                  (ip_address, username, user_type, 0))
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                        conn.commit()
+                        cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
+                        user_id, user_type = cur.fetchone()
                     session['user_type'] = user_type  # Update session to match DB
                     if user_type != 'Guest':  # Ensure points are updated only for the intended user
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
