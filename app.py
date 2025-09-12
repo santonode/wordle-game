@@ -144,16 +144,9 @@ def index():
             ip_address = request.remote_addr
             username = generate_username(ip_address)
             session['username'] = username
-            try:
-                with psycopg.connect(DATABASE_URL) as conn:
-                    with conn.cursor() as cur:
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s) ON CONFLICT (username) DO NOTHING',
-                                  (ip_address, username, 'Guest', 0))
-                        conn.commit()
-            except psycopg.Error as e:
-                print(f"Database error creating guest user: {str(e)}")
+            # No database write here, only set in session
         else:
-            # Fetch user_type and points for existing username
+            # Fetch user_type and points for existing username if already in DB
             try:
                 with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
@@ -249,40 +242,21 @@ def profile():
     points = 0  # Default points
 
     if not username:
+        username = generate_username(ip_address)
+        session['username'] = username
+        # No database write here, only set in session
+    else:
+        # Fetch user_type and points for existing username if already in DB
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    cur.execute('SELECT username, user_type, points FROM users WHERE ip_address = %s LIMIT 1', (ip_address,))
+                    cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
                     result = cur.fetchone()
                     if result:
-                        username, user_type, points = result
-                        session['username'] = username
-                        session['user_type'] = user_type
-                    else:
-                        username = generate_username(ip_address)
-                        session['username'] = username
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points) VALUES (%s, %s, %s, %s)', 
-                                  (ip_address, username, 'Guest', 0))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-                        user_type = 'Guest'
-                        points = 0
+                        user_type, points = result
+                        session['user_type'] = user_type  # Update session
         except psycopg.Error as e:
-            print(f"Database error initializing user: {str(e)}")
-            username = generate_username(ip_address)
-            session['username'] = username
-
-    # Fetch current user details
-    try:
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
-                result = cur.fetchone()
-                if result:
-                    user_type, points = result
-                    session['user_type'] = user_type  # Sync session with DB
-    except psycopg.Error as e:
-        print(f"Database error fetching user details: {str(e)}")
+            print(f"Database error fetching user_type: {str(e)}")
 
     wins = 0
     losses = 0
@@ -293,15 +267,17 @@ def profile():
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT id FROM users WHERE username = %s', (username,))
-                user_id = cur.fetchone()[0]
-                cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
-                stats = cur.fetchone()
-                if stats:
-                    wins, losses, total_guesses, games_played = stats
-                    avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
-                else:
-                    cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
-                    conn.commit()
+                user_id = cur.fetchone()
+                if user_id:
+                    user_id = user_id[0]
+                    cur.execute('SELECT wins, losses, total_guesses, games_played FROM user_stats WHERE user_id = %s', (user_id,))
+                    stats = cur.fetchone()
+                    if stats:
+                        wins, losses, total_guesses, games_played = stats
+                        avg_guesses = round(total_guesses / games_played, 1) if games_played > 0 else 0.0
+                    else:
+                        cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
+                        conn.commit()
     except psycopg.Error as e:
         print(f"Database error fetching stats: {str(e)}")
 
@@ -366,26 +342,6 @@ def profile():
                 except psycopg.Error as e:
                     print(f"Database error during registration: {str(e)}")
                     message = "Error during registration."
-        else:
-            new_username = request.form.get('username', '').strip()
-            if new_username and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
-                try:
-                    with psycopg.connect(DATABASE_URL) as conn:
-                        with conn.cursor() as cur:
-                            cur.execute('UPDATE users SET username = %s, user_type = %s WHERE ip_address = %s AND username = %s', 
-                                      (new_username, 'Member', ip_address, session['username']))
-                            if cur.rowcount > 0:
-                                session['username'] = new_username
-                                user_type = 'Member'
-                                message = "Username updated successfully!"
-                            else:
-                                message = "No user found to update with this IP and username."
-                        conn.commit()
-                except psycopg.Error as e:
-                    print(f"Database error updating username: {str(e)}")
-                    message = f"Error updating username: {str(e)}"
-            else:
-                message = "Username must be 1-12 alphanumeric characters."
 
     return render_template('profile.html', username=session['username'], user_type=user_type, points=points, message=message, wins=wins, losses=losses, avg_guesses=avg_guesses)
 
@@ -462,11 +418,13 @@ def guess():
     username = session.get('username')
     user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
     
-    # Only create a guest user if no username exists and not logged in
+    # Only create a guest user in the database on the first valid guess
     if not username:
         ip_address = request.remote_addr
         username = generate_username(ip_address)
         session['username'] = username
+    else:
+        # Check if user exists in DB, create if not on first guess
         try:
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
@@ -480,11 +438,6 @@ def guess():
                         cur.execute('SELECT user_type FROM users WHERE username = %s', (username,))
                         user_type = cur.fetchone()[0]
                         session['user_type'] = user_type  # Update session with fetched user_type
-                        if user_type == 'Guest':
-                            print(f"Debug - Reusing existing guest user: {username}")
-                        else:
-                            print(f"Debug - Existing user found but not guest: {username}, user_type: {user_type}")
-                conn.commit()
         except psycopg.Error as e:
             print(f"Database error creating guest user: {str(e)}")
 
