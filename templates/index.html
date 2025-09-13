@@ -101,6 +101,14 @@
             color: #26A69A;
             margin-bottom: 10px;
         }
+        .link-row a, .share-link {
+            font-size: 14px;
+            color: #26A69A;
+            text-decoration: none;
+        }
+        .link-row a:hover, .share-link:hover {
+            text-decoration: underline;
+        }
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
@@ -113,6 +121,9 @@
                 white-space: nowrap;
             }
             #word-list-info {
+                font-size: 12px;
+            }
+            .link-row a, .share-link {
                 font-size: 12px;
             }
         }
@@ -132,7 +143,7 @@
         {% if game_blocked %}
             <p id="blocked-message">{{ message }}</p>
             <div style="text-align: center; margin: 10px 0;">
-                <a href="#" onclick="copyShareText(); return false;" style="margin-bottom: 5px;">Share Results</a>
+                <a href="#" onclick="copyShareText(); return false;" class="share-link" style="margin-bottom: 5px;">Share</a>
             </div>
             <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
                 {% if share_text %}
@@ -140,9 +151,9 @@
                 {% endif %}
             </textarea>
             <div class="link-row">
-                <a href="/wordlist">View Word List</a>
-                <a href="/stats">View Stats</a>
-                <a href="/leader">View Leaders</a>
+                <a href="/wordlist">Words</a>
+                <a href="/stats">Stats</a>
+                <a href="/leader">Leaders</a>
             </div>
             <form method="post" action="/profile" style="display: inline; margin-top: 10px;">
                 <button type="submit" name="clear_session">Clear Session</button>
@@ -159,14 +170,14 @@
                     <button onclick="submitGuess()">Submit</button>
                 </div>
                 <div class="link-row">
-                    <a href="/wordlist">View Word List</a>
-                    <a href="/stats">View Stats</a>
-                    <a href="/leader">View Leaders</a>
+                    <a href="/wordlist">Words</a>
+                    <a href="/stats">Stats</a>
+                    <a href="/leader">Leaders</a>
                 </div>
             </div>
             <p id="message"></p>
             <div style="text-align: center; margin: 10px 0;">
-                <a href="#" onclick="copyShareText(); return false;" style="margin-bottom: 5px;">Share Results</a>
+                <a href="#" onclick="copyShareText(); return false;" class="share-link" style="margin-bottom: 5px;">Share</a>
             </div>
             <textarea id="share-text" readonly style="width: 225px; height: 156px; padding: 5px; font-size: 14px; resize: vertical; margin: 0 auto; display: block; background-color: #fff; border: 2px solid #ccc;">
                 {% if share_text %}
