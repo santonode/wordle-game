@@ -628,5 +628,21 @@ def toggle_hard_mode():
 def favicon():
     return app.send_static_file('favicon.ico')  # Ensure static/favicon.ico exists
 
+@app.route('/leader')
+def leader():
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                # Fetch users sorted by points in descending order
+                cur.execute('SELECT id, username, points FROM users ORDER BY points DESC')
+                leaders = [{'id': row[0], 'username': row[1], 'points': row[2]} for row in cur.fetchall()]
+        return render_template('leader.html', leaders=leaders)
+    except psycopg.Error as e:
+        print(f"Database error in leader: {str(e)}")
+        return render_template('leader.html', leaders=[])
+    except Exception as e:
+        print(f"Unexpected error in leader: {str(e)}")
+        return render_template('leader.html', leaders=[])
+
 if __name__ == '__main__':
     app.run(debug=True)
