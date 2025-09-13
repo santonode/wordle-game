@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wurdle - Leaderboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #263238; /* Navy */
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000;
+            height: 45px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 10px;
+            background: linear-gradient(45deg, #26A69A, #FFCA28);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238;
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000;
+            height: 35px;
+            box-sizing: border-box;
+        }
+        .footer p {
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        .content {
+            margin-top: 50px;
+            margin-bottom: 40px;
+            min-height: calc(100vh - 85px);
+            padding-top: 20px;
+            text-align: center;
+            padding-bottom: 60px;
+        }
+        .leader-table {
+            max-width: 600px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .leader-table th, .leader-table td {
+            padding: 5px;
+            text-align: left;
+            border: 1px solid #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .leader-table th {
+            background-color: #263238;
+            color: white;
+        }
+        .leader-table .user-id {
+            font-weight: bold;
+            color: #263238;
+            width: 50px;
+        }
+        .leader-table .username {
+            font-weight: bold;
+            width: 200px;
+        }
+        .leader-table .points {
+            width: 100px;
+        }
 
+        @media (max-width: 600px) {
+            .leader-table {
+                width: 100%;
+            }
+            .leader-table th, .leader-table td {
+                padding: 3px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wurdle</h1>
+    </div>
+    <div class="content">
+        <h2>Leaderboard</h2>
+        <table class="leader-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in leaders %}
+                    <tr>
+                        <td class="user-id">{{ user.id }}</td>
+                        <td class="username">{{ user.username }}</td>
+                        <td class="points">{{ user.points }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends!</p>
+    </div>
+</body>
+</html>
