@@ -1,1 +1,105 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wurdle - Memes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #263238;
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-bottom: 2px solid #000000;
+            height: 45px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            padding: 5px 10px;
+            background: linear-gradient(45deg, #26A69A, #FFCA28);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header .user-info {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #FFCA28;
+            padding: 2px 5px;
+            line-height: 1;
+        }
+        .header .gear-icon {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            font-size: 16px;
+            text-decoration: none;
+            color: white;
+            background-color: #000000;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #263238;
+            color: white;
+            padding: 5px 0;
+            text-align: center;
+            z-index: 1000;
+            border-top: 2px solid #000000;
+            height: 35px;
+            box-sizing: border-box;
+        }
+        .footer p {
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        .content {
+            margin-top: 50px;
+            margin-bottom: 40px;
+            min-height: calc(100vh - 85px);
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wurdle</h1>
+        {% if username and user_type == 'Member' and points is not none %}
+            <div class="user-info">{{ username }} {{ points }}pts</div>
+        {% elif username %}
+            <div class="user-info">guest</div>
+        {% endif %}
+        <a href="/profile" class="gear-icon">⚙️</a>
+    </div>
+    <div class="content">
+        <!-- Content will be added here later -->
+    </div>
+    <div class="footer">
+        <p>Made with ❤️ by Wurdle Team</p>
+        <p>Play Now and Share with Friends!</p>
+    </div>
+</body>
+</html>
