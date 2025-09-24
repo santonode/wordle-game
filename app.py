@@ -644,5 +644,9 @@ def leader():
         print(f"Unexpected error in leader: {str(e)}")
         return render_template('leader.html', leaders=[])
 
+@app.route('/memes')
+def memes():
+    return render_template('memes.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
