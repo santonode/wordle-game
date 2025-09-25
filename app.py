@@ -67,6 +67,22 @@ def init_db():
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                     )
                 ''')
+                # Create new memes table
+                cur.execute('DROP TABLE IF EXISTS memes')
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS memes (
+                        meme_id INTEGER PRIMARY KEY,
+                        meme_url TEXT NOT NULL,
+                        meme_description TEXT NOT NULL,
+                        meme_download_counts INTEGER DEFAULT 0
+                    )
+                ''')
+                # Insert starting record into memes table
+                cur.execute('''
+                    INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (meme_id) DO NOTHING
+                ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0))
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
     except psycopg.Error as e:
