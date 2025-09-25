@@ -10,7 +10,7 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #263238;
+            background-color: #263238; /* Navy */
             color: white;
             padding: 5px 0;
             text-align: center;
@@ -37,28 +37,6 @@
             background-clip: text;
             color: transparent;
         }
-        .header .user-info {
-            position: absolute;
-            top: 50%;
-            left: 10px;
-            transform: translateY(-50%);
-            font-size: 14px;
-            color: #FFCA28;
-            padding: 2px 5px;
-            line-height: 1;
-        }
-        .header .gear-icon {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            font-size: 16px;
-            text-decoration: none;
-            color: white;
-            background-color: #000000;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
         .footer {
             position: fixed;
             bottom: 0;
@@ -80,22 +58,96 @@
             margin-top: 50px;
             margin-bottom: 40px;
             min-height: calc(100vh - 85px);
-            padding-top: 5px;
+            padding-top: 20px;
+            text-align: center;
+            padding-bottom: 60px;
+        }
+        .meme-table {
+            max-width: 1500px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .meme-table th, .meme-table td {
+            padding: 5px;
+            text-align: left;
+            border: 1px solid #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .meme-table th {
+            background-color: #263238;
+            color: white;
+        }
+        .meme-table .meme-id {
+            font-weight: bold;
+            color: #263238;
+            width: 50px;
+        }
+        .meme-table .meme-url {
+            font-weight: bold;
+            width: 300px;
+        }
+        .meme-table .meme-description {
+            width: 400px;
+        }
+        .meme-table .meme-download-counts {
+            width: 150px;
+        }
+        .message {
+            margin-top: 10px;
+            color: #FFCA28;
+        }
+
+        @media (max-width: 600px) {
+            .meme-table {
+                width: 100%;
+            }
+            .meme-table th, .meme-table td {
+                padding: 3px;
+                font-size: 12px;
+            }
+            .meme-table .meme-url {
+                width: auto;
+            }
+            .meme-table .meme-description {
+                width: auto;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Wurdle</h1>
-        {% if username and user_type == 'Member' and points is not none %}
-            <div class="user-info">{{ username }} {{ points }}pts</div>
-        {% elif username %}
-            <div class="user-info">guest</div>
-        {% endif %}
-        <a href="/profile" class="gear-icon">⚙️</a>
     </div>
     <div class="content">
-        <!-- Content will be added here later -->
+        <h2>Meme List</h2>
+        <table class="meme-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>URL</th>
+                    <th>Description</th>
+                    <th>Download Counts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for meme in memes %}
+                    <tr>
+                        <td class="meme-id">{{ meme.meme_id }}</td>
+                        <td class="meme-url">{{ meme.meme_url }}</td>
+                        <td class="meme-description">{{ meme.meme_description }}</td>
+                        <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
     </div>
     <div class="footer">
         <p>Made with ❤️ by Wurdle Team</p>
