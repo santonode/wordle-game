@@ -662,7 +662,18 @@ def leader():
 
 @app.route('/memes')
 def memes():
-    return render_template('memes.html')
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts FROM memes')
+                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3]} for row in cur.fetchall()]
+        return render_template('memes.html', memes=memes)
+    except psycopg.Error as e:
+        print(f"Database error in memes: {str(e)}")
+        return render_template('memes.html', memes=[], message="Error fetching meme data.")
+    except Exception as e:
+        print(f"Unexpected error in memes: {str(e)}")
+        return render_template('memes.html', memes=[], message="Error fetching meme data.")
 
 if __name__ == '__main__':
     app.run(debug=True)
