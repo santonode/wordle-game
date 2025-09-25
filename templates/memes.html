@@ -97,6 +97,13 @@
         .meme-table .meme-download-counts {
             width: 150px;
         }
+        .meme-table a {
+            color: #26A69A;
+            text-decoration: none;
+        }
+        .meme-table a:hover {
+            text-decoration: underline;
+        }
         .message {
             margin-top: 10px;
             color: #FFCA28;
@@ -138,7 +145,7 @@
                 {% for meme in memes %}
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
-                        <td class="meme-url">{{ meme.meme_url }}</td>
+                        <td class="meme-url"><a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_url }}</a></td>
                         <td class="meme-description">{{ meme.meme_description }}</td>
                         <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
                     </tr>
