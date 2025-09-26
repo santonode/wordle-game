@@ -714,5 +714,25 @@ def memes():
         print(f"Unexpected error in memes: {str(e)}")
         return render_template('memes.html', memes=[], message="Error fetching meme data.")
 
+@app.route('/add_point_and_redirect/<int:meme_id>')
+def add_point_and_redirect(meme_id):
+    username = session.get('username')
+    if username:
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
+                    result = cur.fetchone()
+                    if result:
+                        user_id, user_type = result
+                        if user_type != 'Guest':  # Only award points to non-guest users
+                            cur.execute('UPDATE users SET points = points + 1 WHERE id = %s', (user_id,))
+                            conn.commit()
+                            print(f"Debug - Added 1 point for user {username}, new points: {cur.execute('SELECT points FROM users WHERE id = %s', (user_id,)).fetchone()[0]}")
+        except psycopg.Error as e:
+            print(f"Database error adding point: {str(e)}")
+    # Redirect to the original URL, preserving the target="_blank" behavior
+    return redirect(request.args.get('url', ''))
+
 if __name__ == '__main__':
     app.run(debug=True)
