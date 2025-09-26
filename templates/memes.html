@@ -88,7 +88,11 @@
             width: 50px;
         }
         .meme-table .meme-description {
-            width: 700px; /* Increased width to accommodate link */
+            width: 500px; /* Adjusted width to accommodate new column */
+        }
+        .meme-table .meme-type {
+            font-weight: bold;
+            width: 100px;
         }
         .meme-table .meme-download-counts {
             width: 150px;
@@ -116,6 +120,9 @@
             .meme-table .meme-description {
                 width: auto;
             }
+            .meme-table .meme-type {
+                width: auto;
+            }
         }
     </style>
 </head>
@@ -129,6 +136,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Type</th>
                     <th>Description</th>
                     <th>Download Counts</th>
                 </tr>
@@ -137,6 +145,7 @@
                 {% for meme in memes %}
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
+                        <td class="meme-type">{{ meme.type }}</td>
                         <td class="meme-description"><a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a></td>
                         <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
                     </tr>
