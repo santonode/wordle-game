@@ -82,15 +82,16 @@
         .auth-form button:hover {
             background-color: #1e7d71;
         }
-        .user-table {
+        .user-table, .meme-table {
             max-width: 1500px;
             margin: 0 auto;
             border-collapse: collapse;
             background-color: #f0f0f0;
             border-radius: 5px;
             overflow: hidden;
+            margin-top: 20px;
         }
-        .user-table th, .user-table td {
+        .user-table th, .user-table td, .meme-table th, .meme-table td {
             padding: 5px;
             text-align: left;
             border: 1px solid #ccc;
@@ -98,7 +99,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .user-table th {
+        .user-table th, .meme-table th {
             background-color: #263238;
             color: white;
         }
@@ -117,7 +118,22 @@
         .user-table .points {
             width: 100px;
         }
-        .user-table .actions {
+        .meme-table .meme-id {
+            font-weight: bold;
+            color: #263238;
+            width: 50px;
+        }
+        .meme-table .meme-description {
+            width: 500px;
+        }
+        .meme-table .meme-type {
+            font-weight: bold;
+            width: 100px;
+        }
+        .meme-table .meme-download-counts {
+            width: 150px;
+        }
+        .user-table .actions, .meme-table .actions {
             width: 200px;
             text-align: center;
         }
@@ -161,14 +177,17 @@
         }
 
         @media (max-width: 600px) {
-            .user-table {
+            .user-table, .meme-table {
                 width: 100%;
             }
-            .user-table th, .user-table td {
+            .user-table th, .user-table td, .meme-table th, .meme-table td {
                 padding: 3px;
                 font-size: 12px;
             }
-            .user-table .password {
+            .user-table .password, .meme-table .meme-description {
+                width: auto;
+            }
+            .meme-table .meme-type {
                 width: auto;
             }
         }
@@ -209,7 +228,7 @@
                             <td class="password">{{ user.password }}</td>
                             <td class="points">{{ user.points }}</td>
                             <td>
-                                <button class="edit-btn" onclick="toggleEdit('edit-form-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
+                                <button class="edit-btn" onclick="toggleEdit('edit-form-user-{{ loop.index }}', '{{ user.id }}', '{{ user.username }}', '{{ user.password }}', '{{ user.points }}', this)">Edit</button>
                             </td>
                             <td>
                                 <form method="POST" style="display: inline;">
@@ -218,7 +237,7 @@
                                 </form>
                             </td>
                         </tr>
-                        <tr class="edit-form" id="edit-form-{{ loop.index }}" style="display: none;">
+                        <tr class="edit-form" id="edit-form-user-{{ loop.index }}" style="display: none;">
                             <td colspan="6">
                                 <form method="POST">
                                     <input type="hidden" name="edit_username" value="{{ user.username }}">
@@ -226,6 +245,49 @@
                                     <input type="password" name="new_password" placeholder="New Password" value="{{ user.password }}" required>
                                     <input type="number" name="new_points" placeholder="Points" value="{{ user.points }}" min="0" required>
                                     <button type="submit" class="save-btn" name="save">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2>Meme List</h2>
+            <table class="meme-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Download Counts</th>
+                        <th colspan="2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for meme in memes %}
+                        <tr>
+                            <td class="meme-id">{{ meme.meme_id }}</td>
+                            <td class="meme-type">{{ meme.type }}</td>
+                            <td class="meme-description">{{ meme.meme_description }}</td>
+                            <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
+                            <td>
+                                <button class="edit-btn" onclick="toggleEdit('edit-form-meme-{{ loop.index }}', '{{ meme.meme_id }}', '{{ meme.type }}', '{{ meme.meme_description }}', '{{ meme.meme_download_counts }}', this)">Edit</button>
+                            </td>
+                            <td>
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="delete_meme_id" value="{{ meme.meme_id }}">
+                                    <button type="submit" class="delete-btn" name="delete_meme">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr class="edit-form" id="edit-form-meme-{{ loop.index }}" style="display: none;">
+                            <td colspan="6">
+                                <form method="POST">
+                                    <input type="hidden" name="edit_meme_id" value="{{ meme.meme_id }}">
+                                    <input type="text" name="new_type" placeholder="New Type" value="{{ meme.type }}" required>
+                                    <input type="text" name="new_description" placeholder="New Description" value="{{ meme.meme_description }}" required>
+                                    <input type="number" name="new_download_counts" placeholder="Download Counts" value="{{ meme.meme_download_counts }}" min="0" required>
+                                    <button type="submit" class="save-btn" name="save_meme">Save</button>
                                 </form>
                             </td>
                         </tr>
@@ -243,7 +305,7 @@
     </div>
 
     <script>
-        function toggleEdit(formId, userId, username, password, points, button) {
+        function toggleEdit(formId, id, typeOrUsername, descriptionOrPassword, countsOrPoints, button) {
             const form = document.getElementById(formId);
             const isEditing = form.style.display === 'table-row';
 
@@ -256,9 +318,9 @@
                 button.textContent = 'Save';
                 button.className = 'save-btn';
                 const inputs = form.getElementsByTagName('input');
-                inputs[1].value = username; // Set username
-                inputs[2].value = password; // Set password
-                inputs[3].value = points;   // Set points
+                inputs[1].value = typeOrUsername; // Set type or username
+                inputs[2].value = descriptionOrPassword; // Set description or password
+                inputs[3].value = countsOrPoints; // Set download counts or points
             }
         }
     </script>
