@@ -317,6 +317,7 @@
                         <td colspan="6">
                             <form method="POST">
                                 <input type="hidden" name="add_meme" value="true">
+                                <input type="number" name="new_meme_id" placeholder="Meme ID" value="{{ next_meme_id }}" required>
                                 <input type="text" name="new_type" placeholder="New Type" required>
                                 <input type="text" name="new_description" placeholder="New Description" required>
                                 <input type="number" name="new_download_counts" placeholder="Download Counts" min="0" value="0" required>
@@ -354,6 +355,11 @@
                     inputs[1].value = typeOrUsername; // Set type or username
                     inputs[2].value = descriptionOrPassword; // Set description or password
                     inputs[3].value = countsOrPoints; // Set download counts or points
+                } else if (formId === 'add-form-meme') {
+                    // Pre-populate meme_id if not already set
+                    if (!inputs[1].value) {
+                        inputs[1].value = '{{ next_meme_id }}' || 1;
+                    }
                 }
             }
         }
