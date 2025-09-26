@@ -74,15 +74,16 @@ def init_db():
                         meme_id INTEGER PRIMARY KEY,
                         meme_url TEXT NOT NULL,
                         meme_description TEXT NOT NULL,
-                        meme_download_counts INTEGER DEFAULT 0
+                        meme_download_counts INTEGER DEFAULT 0,
+                        type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
                     )
                 ''')
                 # Insert starting record into memes table
                 cur.execute('''
-                    INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
+                    VALUES (%s, %s, %s, %s, %s)
                     ON CONFLICT (meme_id) DO NOTHING
-                ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0))
+                ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
     except psycopg.Error as e:
@@ -665,8 +666,8 @@ def memes():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts FROM memes')
-                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3]} for row in cur.fetchall()]
+                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes')
+                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
         return render_template('memes.html', memes=memes)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
