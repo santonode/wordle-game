@@ -146,7 +146,9 @@
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
-                        <td class="meme-description"><a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a></td>
+                        <td class="meme-description">
+                            <a href="{{ url_for('add_point_and_redirect', meme_id=meme.meme_id, url=meme.meme_url) }}" target="_blank">{{ meme.meme_description }}</a>
+                        </td>
                         <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
                     </tr>
                 {% endfor %}
