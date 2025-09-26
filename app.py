@@ -144,6 +144,17 @@ def generate_username(ip_address):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+# Get next available ID for a table
+def get_next_id(table_name):
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'SELECT COALESCE(MAX({table_name.split("_")[0]}_id), 0) + 1 FROM {table_name}')
+                return cur.fetchone()[0]
+    except psycopg.Error as e:
+        print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
+        return 1  # Fallback to 1 if error occurs
+
 # Initialize database on app startup
 init_db()
 
@@ -485,6 +496,48 @@ def admin():
                 except psycopg.Error as e:
                     print(f"Database error during meme update: {str(e)}")
                     message = f"Error updating meme with ID {edit_meme_id}: {str(e)}"
+            else:
+                message = "Invalid type or empty description. Type must be one of: Other, GM, GN, Crypto, Grawk."
+        elif 'save_user' in request.form and 'add_user' in request.form:
+            new_username = request.form.get('new_username').strip()
+            new_password = request.form.get('new_password')
+            new_points = request.form.get('new_points', 0, type=int)
+            if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
+                            if cur.fetchone():
+                                message = "Username already taken."
+                            else:
+                                new_user_id = get_next_id('users')
+                                cur.execute('INSERT INTO users (id, ip_address, username, password, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+                                          (new_user_id, request.remote_addr, new_username, hash_password(new_password), 'Member', new_points, 'words.txt'))
+                                cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (new_user_id,))
+                                conn.commit()
+                                message = f"User {new_username} added successfully with ID {new_user_id}."
+                except psycopg.Error as e:
+                    print(f"Database error during user add: {str(e)}")
+                    message = f"Error adding user {new_username}: {str(e)}"
+            else:
+                message = "Username must be 1-12 alphanumeric characters."
+        elif 'save_meme' in request.form and 'add_meme' in request.form:
+            new_type = request.form.get('new_type').strip()
+            new_description = request.form.get('new_description').strip()
+            new_download_counts = request.form.get('new_download_counts', 0, type=int)
+            valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
+            if new_type in valid_types and new_description:
+                try:
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            new_meme_id = get_next_id('memes')
+                            cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type) VALUES (%s, %s, %s, %s, %s)',
+                                      (new_meme_id, 'https://example.com', new_description, new_download_counts, new_type))
+                            conn.commit()
+                            message = f"Meme added successfully with ID {new_meme_id}."
+                except psycopg.Error as e:
+                    print(f"Database error during meme add: {str(e)}")
+                    message = f"Error adding meme: {str(e)}"
             else:
                 message = "Invalid type or empty description. Type must be one of: Other, GM, GN, Crypto, Grawk."
 
