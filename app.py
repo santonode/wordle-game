@@ -483,15 +483,16 @@ def admin():
             meme_id = request.form.get('edit_meme_id' if 'edit_meme_id' in request.form else 'new_meme_id', type=int)
             new_type = request.form.get('new_type').strip()
             new_description = request.form.get('new_description').strip()
+            new_meme_url = request.form.get('new_meme_url').strip()
             new_download_counts = request.form.get('new_download_counts', 0, type=int)
             valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
-            if new_type in valid_types and new_description:
+            if new_type in valid_types and new_description and new_meme_url:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             if 'edit_meme_id' in request.form:
-                                cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_download_counts = %s WHERE meme_id = %s',
-                                          (new_type, new_description, new_download_counts, meme_id))
+                                cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_url = %s, meme_download_counts = %s WHERE meme_id = %s',
+                                          (new_type, new_description, new_meme_url, new_download_counts, meme_id))
                                 if cur.rowcount > 0:
                                     conn.commit()
                                     message = f"Meme with ID {meme_id} updated successfully."
@@ -503,14 +504,14 @@ def admin():
                                     message = f"Meme ID {meme_id} already exists."
                                 else:
                                     cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type) VALUES (%s, %s, %s, %s, %s)',
-                                              (meme_id, 'https://example.com', new_description, new_download_counts, new_type))
+                                              (meme_id, new_meme_url, new_description, new_download_counts, new_type))
                                     conn.commit()
                                     message = f"Meme added successfully with ID {meme_id}."
                 except psycopg.Error as e:
                     print(f"Database error during meme update/add: {str(e)}")
                     message = f"Error {'updating' if 'edit_meme_id' in request.form else 'adding'} meme with ID {meme_id}: {str(e)}"
             else:
-                message = "Invalid type or empty description. Type must be one of: Other, GM, GN, Crypto, Grawk."
+                message = "Invalid type, empty description, or empty URL. Type must be one of: Other, GM, GN, Crypto, Grawk."
         elif 'save_user' in request.form and 'add_user' in request.form:
             new_username = request.form.get('new_username').strip()
             new_password = request.form.get('new_password')
@@ -543,8 +544,8 @@ def admin():
             with conn.cursor() as cur:
                 cur.execute('SELECT id, username, password, points FROM users')
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
-                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts FROM memes')
-                memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3]} for row in cur.fetchall()]
+                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url FROM memes')
+                memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4]} for row in cur.fetchall()]
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
     except psycopg.Error as e:
         print(f"Database error in admin: {str(e)}")
