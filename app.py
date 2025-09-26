@@ -416,6 +416,9 @@ def admin():
     message = None
     authenticated = session.get('admin_authenticated', False)
 
+    # Get next available meme ID for the template
+    next_meme_id = get_next_id('memes')
+
     if request.method == 'POST':
         if 'admin_pass' in request.form:
             admin_pass = request.form.get('admin_pass', '')
@@ -477,7 +480,7 @@ def admin():
                 print(f"Database error during meme delete: {str(e)}")
                 message = f"Error deleting meme with ID {delete_meme_id}: {str(e)}"
         elif 'save_meme' in request.form:
-            edit_meme_id = request.form.get('edit_meme_id', type=int)
+            meme_id = request.form.get('edit_meme_id' if 'edit_meme_id' in request.form else 'new_meme_id', type=int)
             new_type = request.form.get('new_type').strip()
             new_description = request.form.get('new_description').strip()
             new_download_counts = request.form.get('new_download_counts', 0, type=int)
@@ -486,16 +489,26 @@ def admin():
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
-                            cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_download_counts = %s WHERE meme_id = %s',
-                                      (new_type, new_description, new_download_counts, edit_meme_id))
-                            if cur.rowcount > 0:
-                                conn.commit()
-                                message = f"Meme with ID {edit_meme_id} updated successfully."
-                            else:
-                                message = f"Meme with ID {edit_meme_id} not found."
+                            if 'edit_meme_id' in request.form:
+                                cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_download_counts = %s WHERE meme_id = %s',
+                                          (new_type, new_description, new_download_counts, meme_id))
+                                if cur.rowcount > 0:
+                                    conn.commit()
+                                    message = f"Meme with ID {meme_id} updated successfully."
+                                else:
+                                    message = f"Meme with ID {meme_id} not found."
+                            elif 'add_meme' in request.form:
+                                cur.execute('SELECT 1 FROM memes WHERE meme_id = %s', (meme_id,))
+                                if cur.fetchone():
+                                    message = f"Meme ID {meme_id} already exists."
+                                else:
+                                    cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type) VALUES (%s, %s, %s, %s, %s)',
+                                              (meme_id, 'https://example.com', new_description, new_download_counts, new_type))
+                                    conn.commit()
+                                    message = f"Meme added successfully with ID {meme_id}."
                 except psycopg.Error as e:
-                    print(f"Database error during meme update: {str(e)}")
-                    message = f"Error updating meme with ID {edit_meme_id}: {str(e)}"
+                    print(f"Database error during meme update/add: {str(e)}")
+                    message = f"Error {'updating' if 'edit_meme_id' in request.form else 'adding'} meme with ID {meme_id}: {str(e)}"
             else:
                 message = "Invalid type or empty description. Type must be one of: Other, GM, GN, Crypto, Grawk."
         elif 'save_user' in request.form and 'add_user' in request.form:
@@ -521,25 +534,6 @@ def admin():
                     message = f"Error adding user {new_username}: {str(e)}"
             else:
                 message = "Username must be 1-12 alphanumeric characters."
-        elif 'save_meme' in request.form and 'add_meme' in request.form:
-            new_type = request.form.get('new_type').strip()
-            new_description = request.form.get('new_description').strip()
-            new_download_counts = request.form.get('new_download_counts', 0, type=int)
-            valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
-            if new_type in valid_types and new_description:
-                try:
-                    with psycopg.connect(DATABASE_URL) as conn:
-                        with conn.cursor() as cur:
-                            new_meme_id = get_next_id('memes')
-                            cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type) VALUES (%s, %s, %s, %s, %s)',
-                                      (new_meme_id, 'https://example.com', new_description, new_download_counts, new_type))
-                            conn.commit()
-                            message = f"Meme added successfully with ID {new_meme_id}."
-                except psycopg.Error as e:
-                    print(f"Database error during meme add: {str(e)}")
-                    message = f"Error adding meme: {str(e)}"
-            else:
-                message = "Invalid type or empty description. Type must be one of: Other, GM, GN, Crypto, Grawk."
 
     if not authenticated:
         return render_template('admin.html', authenticated=False, message=message)
@@ -551,11 +545,11 @@ def admin():
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
                 cur.execute('SELECT meme_id, type, meme_description, meme_download_counts FROM memes')
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3]} for row in cur.fetchall()]
-        return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message)
+        return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
     except psycopg.Error as e:
         print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
-        return render_template('admin.html', authenticated=True, users=[], memes=[], message=message)
+        return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
 
 @app.route('/guess', methods=['POST'])
 def guess():
