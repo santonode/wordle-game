@@ -149,7 +149,9 @@ def get_next_id(table_name):
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute(f'SELECT COALESCE(MAX({table_name.split("_")[0]}_id), 0) + 1 FROM {table_name}')
+                # Use the actual primary key column name (e.g., meme_id for memes table)
+                column_name = {'memes': 'meme_id', 'users': 'id'}.get(table_name.split('_')[0], f"{table_name.split('_')[0]}_id")
+                cur.execute(f'SELECT COALESCE(MAX({column_name}), 0) + 1 FROM {table_name}')
                 return cur.fetchone()[0]
     except psycopg.Error as e:
         print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
@@ -483,7 +485,10 @@ def admin():
             meme_id = request.form.get('edit_meme_id' if 'edit_meme_id' in request.form else 'new_meme_id', type=int)
             new_type = request.form.get('new_type').strip()
             new_description = request.form.get('new_description').strip()
-            new_meme_url = request.form.get('new_meme_url').strip()
+            new_meme_url = request.form.get('new_meme_url')
+            if new_meme_url is None:
+                new_meme_url = ''  # Default to empty string if not provided
+            new_meme_url = new_meme_url.strip() if new_meme_url else ''
             new_download_counts = request.form.get('new_download_counts', 0, type=int)
             valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
             if new_type in valid_types and new_description and new_meme_url:
