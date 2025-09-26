@@ -150,18 +150,18 @@
             margin-right: 5px;
             margin-bottom: 5px;
         }
-        .edit-btn, .save-btn, .delete-btn {
+        .edit-btn, .save-btn, .delete-btn, .add-btn {
             padding: 5px 10px;
             font-size: 14px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        .edit-btn, .save-btn {
+        .edit-btn, .save-btn, .add-btn {
             background-color: #26A69A;
             color: white;
         }
-        .edit-btn:hover, .save-btn:hover {
+        .edit-btn:hover, .save-btn:hover, .add-btn:hover {
             background-color: #1e7d71;
         }
         .delete-btn {
@@ -249,6 +249,22 @@
                             </td>
                         </tr>
                     {% endfor %}
+                    <tr>
+                        <td colspan="6">
+                            <button class="add-btn" onclick="toggleEdit('add-form-user', '', '', '', '', this)">Add User</button>
+                        </td>
+                    </tr>
+                    <tr class="edit-form" id="add-form-user" style="display: none;">
+                        <td colspan="6">
+                            <form method="POST">
+                                <input type="hidden" name="add_user" value="true">
+                                <input type="text" name="new_username" placeholder="New Username" required>
+                                <input type="password" name="new_password" placeholder="New Password" required>
+                                <input type="number" name="new_points" placeholder="Points" min="0" value="0" required>
+                                <button type="submit" class="save-btn" name="save_user">Save</button>
+                            </form>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
 
@@ -292,6 +308,22 @@
                             </td>
                         </tr>
                     {% endfor %}
+                    <tr>
+                        <td colspan="6">
+                            <button class="add-btn" onclick="toggleEdit('add-form-meme', '', '', '', '', this)">Add Meme</button>
+                        </td>
+                    </tr>
+                    <tr class="edit-form" id="add-form-meme" style="display: none;">
+                        <td colspan="6">
+                            <form method="POST">
+                                <input type="hidden" name="add_meme" value="true">
+                                <input type="text" name="new_type" placeholder="New Type" required>
+                                <input type="text" name="new_description" placeholder="New Description" required>
+                                <input type="number" name="new_download_counts" placeholder="Download Counts" min="0" value="0" required>
+                                <button type="submit" class="save-btn" name="save_meme">Save</button>
+                            </form>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             {% if message %}
@@ -311,16 +343,18 @@
 
             if (isEditing) {
                 form.style.display = 'none';
-                button.textContent = 'Edit';
-                button.className = 'edit-btn';
+                button.textContent = formId.includes('add') ? 'Add ' + (formId.includes('user') ? 'User' : 'Meme') : 'Edit';
+                button.className = formId.includes('add') ? 'add-btn' : 'edit-btn';
             } else {
                 form.style.display = 'table-row';
                 button.textContent = 'Save';
                 button.className = 'save-btn';
                 const inputs = form.getElementsByTagName('input');
-                inputs[1].value = typeOrUsername; // Set type or username
-                inputs[2].value = descriptionOrPassword; // Set description or password
-                inputs[3].value = countsOrPoints; // Set download counts or points
+                if (!formId.includes('add')) {
+                    inputs[1].value = typeOrUsername; // Set type or username
+                    inputs[2].value = descriptionOrPassword; // Set description or password
+                    inputs[3].value = countsOrPoints; // Set download counts or points
+                }
             }
         }
     </script>
