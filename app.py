@@ -782,8 +782,12 @@ def add_point_and_redirect(meme_id):
                             cur.execute('UPDATE users SET points = points + 1 WHERE id = %s', (user_id,))
                             conn.commit()
                             print(f"Debug - Added 1 point for user {username}, new points: {cur.execute('SELECT points FROM users WHERE id = %s', (user_id,)).fetchone()[0]}")
+                    # Increment meme_download_counts for all users
+                    cur.execute('UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s', (meme_id,))
+                    conn.commit()
+                    print(f"Debug - Incremented download count for meme_id {meme_id}")
         except psycopg.Error as e:
-            print(f"Database error adding point: {str(e)}")
+            print(f"Database error adding point or incrementing download count: {str(e)}")
     # Redirect to the original URL, preserving the target="_blank" behavior
     return redirect(request.args.get('url', ''))
 
