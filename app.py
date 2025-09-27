@@ -507,7 +507,7 @@ def admin():
                             conn.commit()
                             message = f"Meme with ID {delete_meme_id} deleted successfully."
                         else:
-                            message = f"Meme with ID {delete_m_id} not found."
+                            message = f"Meme with ID {delete_meme_id} not found."
             except psycopg.Error as e:
                 print(f"Database error during meme delete: {str(e)}")
                 message = f"Error deleting meme with ID {delete_meme_id}: {str(e)}"
@@ -579,7 +579,7 @@ def admin():
             with conn.cursor() as cur:
                 cur.execute('SELECT id, username, password, points FROM users')
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
-                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url FROM memes')
+                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4]} for row in cur.fetchall()]
                 print(f"Debug - Memes fetched in admin: {memes}")  # Debug log to check all records
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
@@ -587,7 +587,6 @@ def admin():
         print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
         return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
-
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
