@@ -770,6 +770,7 @@ def memes():
 @app.route('/add_point_and_redirect/<int:meme_id>')
 def add_point_and_redirect(meme_id):
     username = session.get('username')
+    print(f"Debug - Entering add_point_and_redirect for meme_id: {meme_id}, username: {username}")  # Debug entry
     if username:
         try:
             with psycopg.connect(DATABASE_URL) as conn:
@@ -785,9 +786,19 @@ def add_point_and_redirect(meme_id):
                     # Increment meme_download_counts for all users
                     cur.execute('UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s', (meme_id,))
                     conn.commit()
-                    print(f"Debug - Incremented download count for meme_id {meme_id}")
+                    print(f"Debug - Incremented download count for meme_id {meme_id}, new count: {cur.execute('SELECT meme_download_counts FROM memes WHERE meme_id = %s', (meme_id,)).fetchone()[0]}")
         except psycopg.Error as e:
-            print(f"Database error adding point or incrementing download count: {str(e)}")
+            print(f"Debug - Database error adding point or incrementing download count: {str(e)}")
+    else:
+        print(f"Debug - No username in session, incrementing download count only for meme_id {meme_id}")
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute('UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s', (meme_id,))
+                    conn.commit()
+                    print(f"Debug - Incremented download count for meme_id {meme_id} (no user), new count: {cur.execute('SELECT meme_download_counts FROM memes WHERE meme_id = %s', (meme_id,)).fetchone()[0]}")
+        except psycopg.Error as e:
+            print(f"Debug - Database error incrementing download count: {str(e)}")
     # Redirect to the original URL, preserving the target="_blank" behavior
     return redirect(request.args.get('url', ''))
 
