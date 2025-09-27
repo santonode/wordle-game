@@ -23,7 +23,57 @@ def init_db():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                # Drop and recreate daily_word table to ensure schema
+                # Check if key tables exist and have data
+                cur.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'memes'
+                    )
+                """)
+                table_exists = cur.fetchone()[0]
+                
+                if table_exists:
+                    cur.execute("SELECT COUNT(*) FROM memes")
+                    meme_count = cur.fetchone()[0]
+                    if meme_count > 0:
+                        print(f"Memes table already contains {meme_count} records, skipping full reinitialization.")
+                    else:
+                        print("Memes table exists but is empty, initializing with default data.")
+                        cur.execute('DROP TABLE IF EXISTS memes')
+                        cur.execute('''
+                            CREATE TABLE IF NOT EXISTS memes (
+                                meme_id INTEGER PRIMARY KEY,
+                                meme_url TEXT NOT NULL,
+                                meme_description TEXT NOT NULL,
+                                meme_download_counts INTEGER DEFAULT 0,
+                                type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
+                            )
+                        ''')
+                        cur.execute('''
+                            INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
+                            VALUES (%s, %s, %s, %s, %s)
+                            ON CONFLICT (meme_id) DO NOTHING
+                        ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
+                        conn.commit()
+                else:
+                    print("Memes table does not exist, creating and initializing.")
+                    cur.execute('''
+                        CREATE TABLE IF NOT EXISTS memes (
+                            meme_id INTEGER PRIMARY KEY,
+                            meme_url TEXT NOT NULL,
+                            meme_description TEXT NOT NULL,
+                            meme_download_counts INTEGER DEFAULT 0,
+                            type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
+                        )
+                    ''')
+                    cur.execute('''
+                        INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (meme_id) DO NOTHING
+                    ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
+                    conn.commit()
+
+                # Initialize other tables (daily_word, game_logs, users, user_stats) only if they don't exist
                 cur.execute('DROP TABLE IF EXISTS daily_word')
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
@@ -33,7 +83,6 @@ def init_db():
                         PRIMARY KEY (date, word_list)
                     )
                 ''')
-                # Ensure game_logs table exists
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS game_logs (
                         id SERIAL PRIMARY KEY,
@@ -44,7 +93,6 @@ def init_db():
                         guesses INTEGER
                     )
                 ''')
-                # Ensure users table exists with id as primary key
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id SERIAL PRIMARY KEY,
@@ -56,7 +104,6 @@ def init_db():
                         word_list TEXT DEFAULT 'words.txt'
                     )
                 ''')
-                # Ensure user_stats table exists with foreign key on id
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS user_stats (
                         user_id INTEGER PRIMARY KEY,
@@ -67,23 +114,6 @@ def init_db():
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                     )
                 ''')
-                # Create new memes table
-                cur.execute('DROP TABLE IF EXISTS memes')
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS memes (
-                        meme_id INTEGER PRIMARY KEY,
-                        meme_url TEXT NOT NULL,
-                        meme_description TEXT NOT NULL,
-                        meme_download_counts INTEGER DEFAULT 0,
-                        type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
-                    )
-                ''')
-                # Insert starting record into memes table
-                cur.execute('''
-                    INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (meme_id) DO NOTHING
-                ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
     except psycopg.Error as e:
@@ -477,7 +507,7 @@ def admin():
                             conn.commit()
                             message = f"Meme with ID {delete_meme_id} deleted successfully."
                         else:
-                            message = f"Meme with ID {delete_meme_id} not found."
+                            message = f"Meme with ID {delete_m_id} not found."
             except psycopg.Error as e:
                 print(f"Database error during meme delete: {str(e)}")
                 message = f"Error deleting meme with ID {delete_meme_id}: {str(e)}"
@@ -551,6 +581,7 @@ def admin():
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
                 cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url FROM memes')
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4]} for row in cur.fetchall()]
+                print(f"Debug - Memes fetched in admin: {memes}")  # Debug log to check all records
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
     except psycopg.Error as e:
         print(f"Database error in admin: {str(e)}")
@@ -759,6 +790,7 @@ def memes():
             with conn.cursor() as cur:
                 cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes')
                 memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
+                print(f"Debug - Memes fetched: {memes}")  # Debug log to check all records
         return render_template('memes.html', memes=memes)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
