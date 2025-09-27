@@ -788,7 +788,7 @@ def memes():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes')
+                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
                 print(f"Debug - Memes fetched: {memes}")  # Debug log to check all records
         return render_template('memes.html', memes=memes)
