@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Santo - Memes</title>
+    <title>Santo - Meme List ({{ meme_count }} vids / {{ total_downloads }} downloads)</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         .header {
@@ -142,7 +142,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for meme in memes %}
+                {% for meme in memes|sort(attribute='meme_id') %}
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
