@@ -12,6 +12,12 @@
             max-width: 100%;
             margin: 0 auto;
         }
+        .summary {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: bold;
+        }
         .meme-table {
             width: 100%;
             border-collapse: collapse;
@@ -31,19 +37,34 @@
         .meme-table tr:hover {
             background-color: #f1f1f1;
         }
+        /* Column-specific widths */
+        .meme-table th:nth-child(1), .meme-table td:nth-child(1) { /* ID */
+            width: 10%;
+            min-width: 50px;
+        }
+        .meme-table th:nth-child(2), .meme-table td:nth-child(2) { /* Type */
+            width: 15%;
+            min-width: 80px;
+        }
+        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description */
+            width: 60%;
+            min-width: 150px;
+        }
+        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Download Counts */
+            width: 15%;
+            min-width: 80px;
+        }
         @media (max-width: 600px) {
             .meme-table {
                 display: block;
                 overflow-x: auto;
             }
             .meme-table th, .meme-table td {
-                min-width: 100px;
+                min-width: 50px;
             }
-        }
-        .summary {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            color: #333;
+            .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Ensure Description remains widest */
+                min-width: 150px;
+            }
         }
     </style>
 </head>
