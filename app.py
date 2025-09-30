@@ -795,7 +795,7 @@ def memes():
                 meme_count = cur.fetchone()[0]
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
                 total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
-                print(f"Debug - Memes fetched: {memes}")  # Debug log to check all records
+                print(f"Debug - Memes fetched: {memes}, meme_count: {meme_count}, total_downloads: {total_downloads}")  # Enhanced debug log
         return render_template('memes.html', memes=memes, meme_count=meme_count, total_downloads=total_downloads)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
