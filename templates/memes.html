@@ -37,22 +37,22 @@
         .meme-table tr:hover {
             background-color: #f1f1f1;
         }
-        /* Column-specific widths */
+        /* Adjusted column-specific widths */
         .meme-table th:nth-child(1), .meme-table td:nth-child(1) { /* ID */
-            width: 10%;
-            min-width: 50px;
+            width: 5%;
+            min-width: 40px;
         }
         .meme-table th:nth-child(2), .meme-table td:nth-child(2) { /* Type */
             width: 15%;
             min-width: 80px;
         }
         .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description */
-            width: 60%;
+            width: 65%;
             min-width: 150px;
         }
-        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Download Counts */
+        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Counts */
             width: 15%;
-            min-width: 80px;
+            min-width: 60px;
         }
         @media (max-width: 600px) {
             .meme-table {
@@ -60,7 +60,7 @@
                 overflow-x: auto;
             }
             .meme-table th, .meme-table td {
-                min-width: 50px;
+                min-width: 40px;
             }
             .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Ensure Description remains widest */
                 min-width: 150px;
@@ -73,7 +73,7 @@
         <h1>Memes</h1>
     </div>
     <div class="content">
-        <div class="summary">Total Memes: {{ meme_count }} vids / Total Downloads: {{ total_downloads }}</div>
+        <div class="summary">Total Memes: {{ meme_count|default(0) }} vids / Total Downloads: {{ total_downloads|default(0) }}</div>
         <h2>Meme List</h2>
         <table class="meme-table">
             <thead>
@@ -81,7 +81,7 @@
                     <th>ID</th>
                     <th>Type</th>
                     <th>Description</th>
-                    <th>Download Counts</th>
+                    <th>Counts</th>
                 </tr>
             </thead>
             <tbody>
