@@ -789,14 +789,19 @@ def memes():
             with conn.cursor() as cur:
                 cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
+                # Calculate total meme count and total downloads
+                cur.execute('SELECT COUNT(*) FROM memes')
+                meme_count = cur.fetchone()[0]
+                cur.execute('SELECT SUM(meme_download_counts) FROM memes')
+                total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
                 print(f"Debug - Memes fetched: {memes}")  # Debug log to check all records
-        return render_template('memes.html', memes=memes)
+        return render_template('memes.html', memes=memes, meme_count=meme_count, total_downloads=total_downloads)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.")
+        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
     except Exception as e:
         print(f"Unexpected error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.")
+        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
 
 @app.route('/add_point_and_redirect/<int:meme_id>')
 def add_point_and_redirect(meme_id):
