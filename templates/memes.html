@@ -19,10 +19,12 @@
             color: #333;
             font-weight: bold;
             position: sticky; /* Keep summary at top when scrolling */
-            top: 0;
+            top: 60px; /* Adjusted to account for header height */
             background-color: #fff; /* Prevent content overlap */
             z-index: 10; /* Ensure it stays above other content */
             padding: 5px 10px; /* Add padding for readability */
+            width: 100%; /* Ensure full width */
+            box-sizing: border-box; /* Include padding in width calculation */
         }
         .meme-table {
             width: 100%;
@@ -49,16 +51,16 @@
             min-width: 40px;
         }
         .meme-table th:nth-child(2), .meme-table td:nth-child(2) { /* Type */
-            width: 15%;
-            min-width: 80px;
+            width: 5%; /* Reduced to balance with increased Description */
+            min-width: 60px;
         }
         .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description */
-            width: 65%;
+            width: 80%; /* Increased as requested */
             min-width: 150px;
         }
         .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Counts */
-            width: 15%;
-            min-width: 60px;
+            width: 10%; /* Reduced to balance with increased Description */
+            min-width: 50px;
         }
         @media (max-width: 600px) {
             .meme-table {
@@ -73,7 +75,13 @@
             }
             .summary {
                 position: relative; /* Reset to relative on mobile to avoid overlap with scroll */
+                top: 0; /* Reset top positioning on mobile */
                 padding: 10px; /* Increase padding for mobile touch targets */
+                margin-top: 0; /* Remove any margin to ensure it’s at the top */
+            }
+            .header {
+                position: relative; /* Ensure header doesn’t interfere */
+                margin-bottom: 0; /* Remove bottom margin */
             }
         }
     </style>
@@ -84,7 +92,6 @@
     </div>
     <div class="content">
         <div class="summary">Total Memes: {{ meme_count|default(0) }} vids / Total Downloads: {{ total_downloads|default(0) }}</div>
-        <h2>Meme List</h2>
         <table class="meme-table">
             <thead>
                 <tr>
