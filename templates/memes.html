@@ -11,12 +11,18 @@
             padding: 10px;
             max-width: 100%;
             margin: 0 auto;
+            min-height: 100vh; /* Ensure content takes full viewport height */
         }
         .summary {
             font-size: 1.2em;
             margin-bottom: 10px;
             color: #333;
             font-weight: bold;
+            position: sticky; /* Keep summary at top when scrolling */
+            top: 0;
+            background-color: #fff; /* Prevent content overlap */
+            z-index: 10; /* Ensure it stays above other content */
+            padding: 5px 10px; /* Add padding for readability */
         }
         .meme-table {
             width: 100%;
@@ -64,6 +70,10 @@
             }
             .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Ensure Description remains widest */
                 min-width: 150px;
+            }
+            .summary {
+                position: relative; /* Reset to relative on mobile to avoid overlap with scroll */
+                padding: 10px; /* Increase padding for mobile touch targets */
             }
         }
     </style>
