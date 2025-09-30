@@ -49,6 +49,7 @@ def init_db():
                                 type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
                             )
                         ''')
+                        # Insert default meme
                         cur.execute('''
                             INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
                             VALUES (%s, %s, %s, %s, %s)
@@ -66,6 +67,7 @@ def init_db():
                             type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
                         )
                     ''')
+                    # Insert default meme
                     cur.execute('''
                         INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
                         VALUES (%s, %s, %s, %s, %s)
@@ -793,37 +795,11 @@ def memes():
                 # Calculate total meme count and total downloads
                 cur.execute('SELECT COUNT(*) FROM memes')
                 meme_count = cur.fetchone()[0]
+                # Verify count against fetched data for debugging
+                verified_count = len(memes)
+                if meme_count != verified_count:
+                    print(f"Warning: Meme count mismatch - SQL COUNT: {meme_count}, Fetched rows: {verified_count}")
+                    meme_count = verified_count  # Use fetched count if mismatch
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
                 total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
-                print(f"Debug - Memes fetched: {memes}, meme_count: {meme_count}, total_downloads: {total_downloads}")  # Enhanced debug log
-        return render_template('memes.html', memes=memes, meme_count=meme_count, total_downloads=total_downloads)
-    except psycopg.Error as e:
-        print(f"Database error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
-    except Exception as e:
-        print(f"Unexpected error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
-
-@app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
-def add_point_and_redirect(meme_id, url):
-    try:
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                # Update download count for the specific meme_id
-                cur.execute(
-                    'UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s',
-                    (meme_id,)
-                )
-                conn.commit()
-                print(f"Debug - Incremented download count for meme_id {meme_id} to {cur.rowcount}")
-        # Redirect to the original URL
-        return redirect(url, code=302)
-    except psycopg.Error as e:
-        print(f"Database error in add_point_and_redirect: {str(e)}")
-        return "Error updating download count", 500
-    except Exception as e:
-        print(f"Unexpected error in add_point_and_redirect: {str(e)}")
-        return "Error updating download count", 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+                print(f"Debug - Memes fetched:
