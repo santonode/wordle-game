@@ -587,6 +587,7 @@ def admin():
         print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
         return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
+
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
@@ -803,8 +804,6 @@ def memes():
         print(f"Unexpected error in memes: {str(e)}")
         return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
 
-# ... (other imports and setup)
-
 @app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
 def add_point_and_redirect(meme_id, url):
     try:
@@ -826,27 +825,5 @@ def add_point_and_redirect(meme_id, url):
         print(f"Unexpected error in add_point_and_redirect: {str(e)}")
         return "Error updating download count", 500
 
-@app.route('/memes')
-def memes():
-    try:
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes ORDER BY meme_id')
-                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
-                # Calculate total meme count and total downloads
-                cur.execute('SELECT COUNT(*) FROM memes')
-                meme_count = cur.fetchone()[0]
-                cur.execute('SELECT SUM(meme_download_counts) FROM memes')
-                total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
-                print(f"Debug - meme_count: {meme_count}, total_downloads: {total_downloads}")  # Simplified debug
-        return render_template('memes.html', memes=memes, meme_count=meme_count, total_downloads=total_downloads)
-    except psycopg.Error as e:
-        print(f"Database error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
-    except Exception as e:
-        print(f"Unexpected error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
-
-# ... (rest of app.py)
 if __name__ == '__main__':
     app.run(debug=True)
