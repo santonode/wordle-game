@@ -3,10 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Santo - Meme List ({{ meme_count }} vids / {{ total_downloads }} downloads)</title>
+    <title>Santo - Meme List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        /* ... (existing styles remain unchanged) ... */
+        /* Basic inline CSS for table and responsiveness */
+        .content {
+            padding: 10px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .meme-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .meme-table th, .meme-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .meme-table th {
+            background-color: #f2f2f2;
+        }
+        .meme-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .meme-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        @media (max-width: 600px) {
+            .meme-table {
+                display: block;
+                overflow-x: auto;
+            }
+            .meme-table th, .meme-table td {
+                min-width: 100px;
+            }
+        }
+        .summary {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -14,6 +52,7 @@
         <h1>Memes</h1>
     </div>
     <div class="content">
+        <div class="summary">Total Memes: {{ meme_count }} vids / Total Downloads: {{ total_downloads }}</div>
         <h2>Meme List</h2>
         <table class="meme-table">
             <thead>
