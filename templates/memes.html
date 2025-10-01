@@ -11,9 +11,34 @@
             padding: 10px;
             max-width: 100%;
             margin: 0 auto;
-            min-height: calc(100vh - 60px); /* Subtract header + footer height (assuming 60px total) */
+            min-height: calc(100vh - 105px); /* Adjusted for 45px header + 60px (footer assumption) */
             margin-bottom: 50px; /* Space for footer */
             box-sizing: border-box;
+        }
+        .header {
+            align-items: center; /* Corrected from lign-itemscenter */
+            background-color: #000; /* Assuming black based on footer, adjust if needed */
+            border-bottom-color: #ddd; /* Default gray, adjust if needed */
+            border-bottom-style: solid; /* Corrected from border-bottom-stylesolid */
+            border-bottom-width: 2px; /* As provided */
+            box-sizing: border-box; /* As provided */
+            color: #fff; /* White text for contrast, adjust if needed */
+            display: flex; /* As provided */
+            font-family: Arial, sans-serif; /* As provided */
+            font-weight: 700; /* As provided */
+            height: 45px; /* As provided */
+            justify-content: center; /* As provided */
+            padding-bottom: 5px; /* As provided */
+            padding-left: 0px; /* As provided */
+            padding-right: 0px; /* As provided */
+            padding-top: 5px; /* As provided */
+            position: fixed; /* As provided */
+            text-align: center; /* As provided */
+            top: 0px; /* As provided */
+            unicode-bidi: isolate; /* As provided */
+            width: 922px; /* As provided */
+            z-index: 1000; /* As provided */
+            margin: 0 auto; /* Center the fixed width */
         }
         .summary {
             font-size: 1.2em;
@@ -21,7 +46,7 @@
             color: #333;
             font-weight: bold;
             position: sticky;
-            top: 70px; /* Increased to avoid overlapping with header and table headers */
+            top: 55px; /* Adjusted for 45px header + 10px buffer */
             background-color: #fff;
             z-index: 10;
             padding: 5px 10px;
@@ -31,7 +56,7 @@
         .meme-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px; /* Added margin to push table below summary when sticky */
+            margin-top: 60px; /* Increased to account for header and summary */
         }
         .meme-table th, .meme-table td {
             border: 1px solid #ddd;
@@ -86,21 +111,21 @@
             .summary {
                 font-size: 0.9em; /* Reduced font size for mobile */
                 position: sticky; /* Use sticky to keep at top */
-                top: 10px; /* Adjusted for mobile header, assuming smaller height */
+                top: 55px; /* Adjusted for 45px header + 10px buffer on mobile */
                 padding: 2px 5px; /* Reduced padding to minimize space */
                 margin-top: 0;
             }
             .content {
-                min-height: calc(100vh - 60px); /* Adjust to match desktop, accounting for header and footer */
+                min-height: calc(100vh - 105px); /* Adjusted for 45px header + 60px footer */
                 margin-bottom: 50px; /* Ensure space for footer */
                 padding-top: 0; /* Remove top padding to align with summary */
             }
             .header {
-                position: relative;
-                margin-bottom: 0; /* Remove bottom margin to avoid pushing content */
+                width: 100%; /* Full width on mobile */
+                margin: 0; /* Remove centering margin on mobile */
             }
             .meme-table {
-                margin-top: 5px; /* Reduced margin for mobile to save space */
+                margin-top: 60px; /* Maintain margin for mobile */
             }
             .meme-table th {
                 cursor: pointer; /* Ensure clickable on mobile */
