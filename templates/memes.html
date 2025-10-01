@@ -40,6 +40,14 @@
         }
         .meme-table th {
             background-color: #f2f2f2;
+            cursor: pointer; /* Indicate clickable headers */
+        }
+        .meme-table th a {
+            color: #000;
+            text-decoration: none;
+        }
+        .meme-table th a:hover {
+            text-decoration: underline;
         }
         .meme-table tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -91,6 +99,12 @@
                 position: relative;
                 margin-bottom: 0; /* Remove bottom margin to avoid pushing content */
             }
+            .meme-table th {
+                cursor: pointer; /* Ensure clickable on mobile */
+            }
+            .meme-table th a {
+                display: block; /* Ensure full clickable area */
+            }
         }
         .footer {
             position: fixed;
@@ -110,18 +124,31 @@
         <h1>Assets</h1>
     </div>
     <div class="content">
-        <div class="summary">Total Memes: {{ meme_count|default(0) }} assets / Total Downloads: {{ total_downloads|default(0) }}</div>
+        <div class="summary">Total Assets: {{ meme_count|default(0) }} assets / Total Downloads: {{ total_downloads|default(0) }}</div>
         <table class="meme-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Counts</th>
+                    <th><a href="?sort=id&order={{ 'asc' if request.args.get('sort') != 'id' or request.args.get('order') == 'desc' else 'desc' }}">ID</a></th>
+                    <th><a href="?sort=type&order={{ 'asc' if request.args.get('sort') != 'type' or request.args.get('order') == 'desc' else 'desc' }}">Type</a></th>
+                    <th><a href="?sort=description&order={{ 'asc' if request.args.get('sort') != 'description' or request.args.get('order') == 'desc' else 'desc' }}">Description</a></th>
+                    <th><a href="?sort=counts&order={{ 'asc' if request.args.get('sort') != 'counts' or request.args.get('order') == 'desc' else 'desc' }}">Counts</a></th>
                 </tr>
             </thead>
             <tbody>
-                {% for meme in memes|sort(attribute='meme_id') %}
+                {% set sort_key = request.args.get('sort', 'counts') %}
+                {% set sort_order = request.args.get('order', 'desc') %}
+                {% if sort_key == 'counts' %}
+                    {% set sorted_memes = memes|sort(attribute='meme_download_counts', reverse=(sort_order == 'desc')) %}
+                {% elif sort_key == 'id' %}
+                    {% set sorted_memes = memes|sort(attribute='meme_id', reverse=(sort_order == 'desc')) %}
+                {% elif sort_key == 'type' %}
+                    {% set sorted_memes = memes|sort(attribute='type', reverse=(sort_order == 'desc')) %}
+                {% elif sort_key == 'description' %}
+                    {% set sorted_memes = memes|sort(attribute='meme_description', reverse=(sort_order == 'desc')) %}
+                {% else %}
+                    {% set sorted_memes = memes|sort(attribute='meme_download_counts', reverse=True) %}
+                {% endif %}
+                {% for meme in sorted_memes %}
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
