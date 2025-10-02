@@ -6,13 +6,12 @@
     <title>Santo - Asset List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        /* Basic inline CSS for table and responsiveness */
         .content {
             padding: 10px;
             max-width: 100%;
             margin: 0 auto;
-            min-height: calc(100vh - 105px); /* Adjusted for 45px header + 60px (footer assumption) */
-            margin-bottom: 50px; /* Space for footer */
+            min-height: calc(100vh - 105px);
+            margin-bottom: 50px;
             box-sizing: border-box;
         }
         .header {
@@ -88,7 +87,7 @@
             width: 5%;
             min-width: 60px;
         }
-        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description */
+        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description / Owner */
             width: 80%;
             min-width: 150px;
         }
@@ -157,7 +156,7 @@
                 <tr>
                     <th><a href="?sort=id&order={{ 'asc' if request.args.get('sort') != 'id' or request.args.get('order') == 'desc' else 'desc' }}">ID</a></th>
                     <th><a href="?sort=type&order={{ 'asc' if request.args.get('sort') != 'type' or request.args.get('order') == 'desc' else 'desc' }}">Type</a></th>
-                    <th><a href="?sort=description&order={{ 'asc' if request.args.get('sort') != 'description' or request.args.get('order') == 'desc' else 'desc' }}">Description Owner</a></th>
+                    <th><a href="?sort=description&order={{ 'asc' if request.args.get('sort') != 'description' or request.args.get('order') == 'desc' else 'desc' }}">Description / Owner</a></th>
                     <th><a href="?sort=counts&order={{ 'asc' if request.args.get('sort') != 'counts' or request.args.get('order') == 'desc' else 'desc' }}">Counts</a></th>
                 </tr>
             </thead>
