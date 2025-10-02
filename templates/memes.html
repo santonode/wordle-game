@@ -16,29 +16,29 @@
             box-sizing: border-box;
         }
         .header {
-            align-items: center; /* Corrected from lign-itemscenter */
-            background-color: #000; /* Black background to fill the screen */
-            border-bottom-color: #ddd; /* Default gray, adjust if needed */
-            border-bottom-style: solid; /* Corrected from border-bottom-stylesolid */
-            border-bottom-width: 2px; /* As provided */
-            box-sizing: border-box; /* As provided */
-            color: #fff; /* White text for contrast, adjust if needed */
-            display: flex; /* As provided */
-            font-family: Arial, sans-serif; /* As provided */
-            font-weight: 700; /* As provided */
-            height: 45px; /* As provided */
-            justify-content: center; /* As provided */
-            padding-bottom: 5px; /* As provided */
-            padding-left: 0px; /* As provided */
-            padding-right: 0px; /* As provided */
-            padding-top: 5px; /* As provided */
-            position: fixed; /* As provided */
-            text-align: center; /* As provided */
-            top: 0px; /* As provided */
-            unicode-bidi: isolate; /* As provided */
-            width: 100%; /* Changed from 922px to fill the screen */
-            z-index: 1000; /* As provided */
-            margin: 0; /* Remove margin to ensure full width */
+            align-items: center;
+            background-color: #000;
+            border-bottom-color: #ddd;
+            border-bottom-style: solid;
+            border-bottom-width: 2px;
+            box-sizing: border-box;
+            color: #fff;
+            display: flex;
+            font-family: Arial, sans-serif;
+            font-weight: 700;
+            height: 45px;
+            justify-content: center;
+            padding-bottom: 5px;
+            padding-left: 0px;
+            padding-right: 0px;
+            padding-top: 5px;
+            position: fixed;
+            text-align: center;
+            top: 0px;
+            unicode-bidi: isolate;
+            width: 100%;
+            z-index: 1000;
+            margin: 0;
         }
         .summary {
             font-size: 1.2em;
@@ -46,7 +46,7 @@
             color: #333;
             font-weight: bold;
             position: sticky;
-            top: 55px; /* Adjusted for 45px header + 10px buffer */
+            top: 55px;
             background-color: #fff;
             z-index: 10;
             padding: 5px 10px;
@@ -56,7 +56,7 @@
         .meme-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 60px; /* Increased to account for header and summary */
+            margin-top: 60px;
         }
         .meme-table th, .meme-table td {
             border: 1px solid #ddd;
@@ -65,7 +65,7 @@
         }
         .meme-table th {
             background-color: #f2f2f2;
-            cursor: pointer; /* Indicate clickable headers */
+            cursor: pointer;
         }
         .meme-table th a {
             color: #000;
@@ -80,7 +80,6 @@
         .meme-table tr:hover {
             background-color: #f1f1f1;
         }
-        /* Adjusted column-specific widths */
         .meme-table th:nth-child(1), .meme-table td:nth-child(1) { /* ID */
             width: 5%;
             min-width: 40px;
@@ -105,33 +104,33 @@
             .meme-table th, .meme-table td {
                 min-width: 40px;
             }
-            .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Ensure Description remains widest */
+            .meme-table th:nth-child(3), .meme-table td:nth-child(3) {
                 min-width: 150px;
             }
             .summary {
-                font-size: 0.9em; /* Reduced font size for mobile */
-                position: sticky; /* Use sticky to keep at top */
-                top: 55px; /* Adjusted for 45px header + 10px buffer on mobile */
-                padding: 2px 5px; /* Reduced padding to minimize space */
+                font-size: 0.9em;
+                position: sticky;
+                top: 55px;
+                padding: 2px 5px;
                 margin-top: 0;
             }
             .content {
-                min-height: calc(100vh - 105px); /* Adjusted for 45px header + 60px footer */
-                margin-bottom: 50px; /* Ensure space for footer */
-                padding-top: 0; /* Remove top padding to align with summary */
+                min-height: calc(100vh - 105px);
+                margin-bottom: 50px;
+                padding-top: 0;
             }
             .header {
-                width: 100%; /* Full width on mobile */
-                margin: 0; /* Remove centering margin on mobile */
+                width: 100%;
+                margin: 0;
             }
             .meme-table {
-                margin-top: 60px; /* Maintain margin for mobile */
+                margin-top: 60px;
             }
             .meme-table th {
-                cursor: pointer; /* Ensure clickable on mobile */
+                cursor: pointer;
             }
             .meme-table th a {
-                display: block; /* Ensure full clickable area */
+                display: block;
             }
         }
         .footer {
@@ -182,7 +181,8 @@
                         <td class="meme-type">{{ meme.type }}</td>
                         <td class="meme-description">
                             <a href="{{ url_for('add_point_and_redirect', meme_id=meme.meme_id, url=meme.meme_url) }}" target="_blank">{{ meme.meme_description }}</a> / 
-                            {{ users|selectattr('id', 'equalto', meme.owner)|first.username if users|selectattr('id', 'equalto', meme.owner)|first else 'Unknown' }}
+                            {% set owner = users|selectattr('id', 'equalto', meme.owner)|first %}
+                            {{ owner.username if owner else 'Unknown' }}
                         </td>
                         <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
                     </tr>
