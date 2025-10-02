@@ -46,15 +46,16 @@ def init_db():
                                 meme_url TEXT NOT NULL,
                                 meme_description TEXT NOT NULL,
                                 meme_download_counts INTEGER DEFAULT 0,
-                                type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
+                                type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk')),
+                                owner INTEGER DEFAULT 3
                             )
                         ''')
-                        # Insert default meme
+                        # Insert default meme with owner
                         cur.execute('''
-                            INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
-                            VALUES (%s, %s, %s, %s, %s)
+                            INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner)
+                            VALUES (%s, %s, %s, %s, %s, %s)
                             ON CONFLICT (meme_id) DO NOTHING
-                        ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
+                        ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM', 3))
                         conn.commit()
                 else:
                     print("Memes table does not exist, creating and initializing.")
@@ -64,15 +65,16 @@ def init_db():
                             meme_url TEXT NOT NULL,
                             meme_description TEXT NOT NULL,
                             meme_download_counts INTEGER DEFAULT 0,
-                            type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk'))
+                            type TEXT DEFAULT 'Other' CHECK (type IN ('Other', 'GM', 'GN', 'Crypto', 'Grawk')),
+                            owner INTEGER DEFAULT 3
                         )
                     ''')
-                    # Insert default meme
+                    # Insert default meme with owner
                     cur.execute('''
-                        INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type)
-                        VALUES (%s, %s, %s, %s, %s)
+                        INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         ON CONFLICT (meme_id) DO NOTHING
-                    ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM'))
+                    ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM', 3))
                     conn.commit()
 
                 # Initialize other tables (daily_word, game_logs, users, user_stats) only if they don't exist
@@ -540,8 +542,8 @@ def admin():
                                 if cur.fetchone():
                                     message = f"Meme ID {meme_id} already exists."
                                 else:
-                                    cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type) VALUES (%s, %s, %s, %s, %s)',
-                                              (meme_id, new_meme_url, new_description, new_download_counts, new_type))
+                                    cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner) VALUES (%s, %s, %s, %s, %s, %s)',
+                                              (meme_id, new_meme_url, new_description, new_download_counts, new_type, 3))  # Default owner to 3 (santo)
                                     conn.commit()
                                     message = f"Meme added successfully with ID {meme_id}."
                 except psycopg.Error as e:
@@ -581,8 +583,8 @@ def admin():
             with conn.cursor() as cur:
                 cur.execute('SELECT id, username, password, points FROM users')
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
-                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url FROM memes ORDER BY meme_id')
-                memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4]} for row in cur.fetchall()]
+                cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url, owner FROM memes ORDER BY meme_id')
+                memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4], 'owner': row[5]} for row in cur.fetchall()]
                 print(f"Debug - Memes fetched in admin: {memes}")  # Debug log to check all records
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
     except psycopg.Error as e:
@@ -790,8 +792,10 @@ def memes():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type FROM memes ORDER BY meme_id')
-                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4]} for row in cur.fetchall()]
+                cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type, owner FROM memes ORDER BY meme_id')
+                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4], 'owner': row[5]} for row in cur.fetchall()]
+                cur.execute('SELECT id, username FROM users')
+                users = [{'id': row[0], 'username': row[1]} for row in cur.fetchall()]
                 # Calculate total meme count and total downloads
                 cur.execute('SELECT COUNT(*) FROM memes')
                 meme_count = cur.fetchone()[0]
@@ -802,14 +806,14 @@ def memes():
                     meme_count = verified_count  # Use fetched count if mismatch
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
                 total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
-                print(f"Debug - Memes fetched: {memes}, meme_count: {meme_count}, total_downloads: {total_downloads}")  # Completed debug statement
-        return render_template('memes.html', memes=memes, meme_count=meme_count, total_downloads=total_downloads)
+                print(f"Debug - Memes fetched: {memes}, users: {users}, meme_count: {meme_count}, total_downloads: {total_downloads}")  # Completed debug statement
+        return render_template('memes.html', memes=memes, users=users, meme_count=meme_count, total_downloads=total_downloads)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
+        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
     except Exception as e:
         print(f"Unexpected error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
+        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
 
 @app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
 def add_point_and_redirect(meme_id, url):
