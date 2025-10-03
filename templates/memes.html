@@ -181,7 +181,7 @@
                         <td class="meme-description">
                             {% set download_url = meme.meme_url|get_download_url %}
                             {% if download_url and download_url != meme.meme_url %}
-                                <a href="javascript:void(0)" onclick="downloadFile('{{ download_url }}')">{{ meme.meme_description }}</a>
+                                <a href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}')">{{ meme.meme_description }}</a>
                             {% else %}
                                 <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
                             {% endif %} /
@@ -202,13 +202,31 @@
     </div>
 
     <script>
-        function downloadFile(url) {
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = ''; // Browser will use the file's original name
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function incrementAndDownload(memeId, url) {
+            fetch(`/increment_download/${memeId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = ''; // Browser will use the file's original name
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    console.error('Failed to increment download count:', data.error);
+                    alert('Failed to update download count. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error during increment and download:', error);
+                alert('An error occurred. Please try again.');
+            });
         }
     </script>
 </body>
