@@ -179,9 +179,9 @@
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
                         <td class="meme-description">
-                            {% if meme.meme_url and 'drive.google.com/file/d/' in meme.meme_url %}
-                                {% set file_id = meme.meme_url|regex_replace('https://drive.google.com/file/d/([^/]+)/view\\?usp=drive_link', '\\1') %}
-                                <a href="javascript:void(0)" onclick="downloadFile('https://drive.google.com/uc?export=download&id={{ file_id }}')">{{ meme.meme_description }}</a>
+                            {% set download_url = meme.meme_url|get_download_url %}
+                            {% if download_url and download_url != meme.meme_url %}
+                                <a href="javascript:void(0)" onclick="downloadFile('{{ download_url }}')">{{ meme.meme_description }}</a>
                             {% else %}
                                 <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
                             {% endif %} /
@@ -211,5 +211,5 @@
             document.body.removeChild(link);
         }
     </script>
-</head>
+</body>
 </html>
