@@ -483,7 +483,7 @@ def admin():
             edit_username = request.form.get('edit_username')
             new_username = request.form.get('new_username').strip()
             new_password = request.form.get('new_password')
-            new_points = request.form.get('new_points', 0, type=int)  # Get points with default 0
+            new_points = request.form.get('new_points', 0, type=int)
             if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
@@ -520,18 +520,19 @@ def admin():
             new_type = request.form.get('new_type').strip()
             new_description = request.form.get('new_description').strip()
             new_meme_url = request.form.get('new_meme_url')
-            if new_meme_url is None:
-                new_meme_url = ''  # Default to empty string if not provided
-            new_meme_url = new_meme_url.strip() if new_meme_url else ''
+            new_owner = request.form.get('new_owner', type=int)
             new_download_counts = request.form.get('new_download_counts', 0, type=int)
+            if new_meme_url is None:
+                new_meme_url = ''
+            new_meme_url = new_meme_url.strip() if new_meme_url else ''
             valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
-            if new_type in valid_types and new_description and new_meme_url:
+            if new_type in valid_types and new_description and new_meme_url and new_owner is not None:
                 try:
                     with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             if 'edit_meme_id' in request.form:
-                                cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_url = %s, meme_download_counts = %s WHERE meme_id = %s',
-                                          (new_type, new_description, new_meme_url, new_download_counts, meme_id))
+                                cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_url = %s, owner = %s, meme_download_counts = %s WHERE meme_id = %s',
+                                          (new_type, new_description, new_meme_url, new_owner, new_download_counts, meme_id))
                                 if cur.rowcount > 0:
                                     conn.commit()
                                     message = f"Meme with ID {meme_id} updated successfully."
@@ -543,14 +544,14 @@ def admin():
                                     message = f"Meme ID {meme_id} already exists."
                                 else:
                                     cur.execute('INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner) VALUES (%s, %s, %s, %s, %s, %s)',
-                                              (meme_id, new_meme_url, new_description, new_download_counts, new_type, 3))  # Default owner to 3 (santo)
+                                              (meme_id, new_meme_url, new_description, new_download_counts, new_type, new_owner))
                                     conn.commit()
                                     message = f"Meme added successfully with ID {meme_id}."
                 except psycopg.Error as e:
                     print(f"Database error during meme update/add: {str(e)}")
                     message = f"Error {'updating' if 'edit_meme_id' in request.form else 'adding'} meme with ID {meme_id}: {str(e)}"
             else:
-                message = "Invalid type, empty description, or empty URL. Type must be one of: Other, GM, GN, Crypto, Grawk."
+                message = "Invalid type, empty description, empty URL, or invalid owner ID. Type must be one of: Other, GM, GN, Crypto, Grawk. Owner ID must be a valid integer."
         elif 'save_user' in request.form and 'add_user' in request.form:
             new_username = request.form.get('new_username').strip()
             new_password = request.form.get('new_password')
@@ -585,13 +586,12 @@ def admin():
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
                 cur.execute('SELECT meme_id, type, meme_description, meme_download_counts, meme_url, owner FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4], 'owner': row[5]} for row in cur.fetchall()]
-                print(f"Debug - Memes fetched in admin: {memes}")  # Debug log to check all records
+                print(f"Debug - Memes fetched in admin: {memes}")
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
     except psycopg.Error as e:
         print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
         return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
-
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
