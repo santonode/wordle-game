@@ -143,6 +143,14 @@
             padding-top: 10px;
             box-sizing: border-box;
         }
+        .download-link {
+            color: #26A69A;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .download-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -181,7 +189,7 @@
                         <td class="meme-description">
                             {% set download_url = meme.meme_url|get_download_url %}
                             {% if download_url and download_url != meme.meme_url %}
-                                <a href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}')">{{ meme.meme_description }}</a>
+                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}')">{{ meme.meme_description }}</a>
                             {% else %}
                                 <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
                             {% endif %} /
@@ -214,7 +222,7 @@
                 if (data.success) {
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = ''; // Browser will use the file's original name
+                    link.download = '';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
