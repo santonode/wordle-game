@@ -7,7 +7,8 @@ import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import hashlib
-import psycopg  # Updated to psycopg3
+import psycopg
+import re
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -190,6 +191,18 @@ def get_next_id(table_name):
     except psycopg.Error as e:
         print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
         return 1  # Fallback to 1 if error occurs
+
+# Custom filter to transform Google Drive URL to download link
+def get_download_url(url):
+    if url and 'drive.google.com/file/d/' in url:
+        match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
+        if match:
+            file_id = match.group(1)
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+    return url
+
+# Register the custom filter
+app.jinja_env.filters['get_download_url'] = get_download_url
 
 # Initialize database on app startup
 init_db()
@@ -592,6 +605,7 @@ def admin():
         print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
         return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
+
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
@@ -806,7 +820,7 @@ def memes():
                     meme_count = verified_count  # Use fetched count if mismatch
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
                 total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
-                print(f"Debug - Memes fetched: {memes}, users: {users}, meme_count: {meme_count}, total_downloads: {total_downloads}")  # Completed debug statement
+                print(f"Debug - Memes fetched: {memes}, users: {users}, meme_count: {meme_count}, total_downloads: {total_downloads}")
         return render_template('memes.html', memes=memes, users=users, meme_count=meme_count, total_downloads=total_downloads)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
