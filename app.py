@@ -850,5 +850,25 @@ def add_point_and_redirect(meme_id, url):
         print(f"Unexpected error in add_point_and_redirect: {str(e)}")
         return "Error updating download count", 500
 
+@app.route('/increment_download/<int:meme_id>', methods=['POST'])
+def increment_download(meme_id):
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                # Update download count for the specific meme_id
+                cur.execute(
+                    'UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s',
+                    (meme_id,)
+                )
+                conn.commit()
+                print(f"Debug - Incremented download count for meme_id {meme_id} to {cur.rowcount}")
+        return jsonify({'success': True})
+    except psycopg.Error as e:
+        print(f"Database error in increment_download: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    except Exception as e:
+        print(f"Unexpected error in increment_download: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
