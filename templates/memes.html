@@ -179,7 +179,12 @@
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
                         <td class="meme-description">
-                            <a href="{{ url_for('add_point_and_redirect', meme_id=meme.meme_id, url=meme.meme_url) }}" target="_blank">{{ meme.meme_description }}</a> / 
+                            {% if meme.meme_url and 'drive.google.com/file/d/' in meme.meme_url %}
+                                {% set file_id = meme.meme_url|regex_replace('https://drive.google.com/file/d/([^/]+)/view\\?usp=drive_link', '\\1') %}
+                                <a href="javascript:void(0)" onclick="downloadFile('https://drive.google.com/uc?export=download&id={{ file_id }}')">{{ meme.meme_description }}</a>
+                            {% else %}
+                                <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
+                            {% endif %} /
                             {% set owner = users|selectattr('id', 'equalto', meme.owner)|first %}
                             {{ owner.username if owner else 'Unknown' }}
                         </td>
@@ -195,5 +200,16 @@
     <div class="footer">
         <p>Made with ❤️ by Team Santo</p>
     </div>
-</body>
+
+    <script>
+        function downloadFile(url) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = ''; // Browser will use the file's original name
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</head>
 </html>
