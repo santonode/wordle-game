@@ -10,7 +10,7 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #263238; /* Navy */
+            background-color: #263238;
             color: white;
             padding: 5px 0;
             text-align: center;
@@ -136,6 +136,9 @@
         .meme-table .meme-url {
             width: 300px;
         }
+        .meme-table .meme-owner {
+            width: 150px;
+        }
         .user-table .actions, .meme-table .actions {
             width: 200px;
             text-align: center;
@@ -191,6 +194,9 @@
                 width: auto;
             }
             .meme-table .meme-type {
+                width: auto;
+            }
+            .meme-table .meme-owner {
                 width: auto;
             }
         }
@@ -279,6 +285,7 @@
                         <th>Type</th>
                         <th>Description</th>
                         <th>URL</th>
+                        <th>Owner</th>
                         <th>Download Counts</th>
                         <th colspan="2">Actions</th>
                     </tr>
@@ -290,9 +297,13 @@
                             <td class="meme-type">{{ meme.type }}</td>
                             <td class="meme-description">{{ meme.meme_description }}</td>
                             <td class="meme-url">{{ meme.meme_url }}</td>
+                            <td class="meme-owner">
+                                {% set owner = users|selectattr('id', 'equalto', meme.owner)|first %}
+                                {{ owner.username if owner else 'Unknown' }}
+                            </td>
                             <td class="meme-download-counts">{{ meme.meme_download_counts }}</td>
                             <td>
-                                <button class="edit-btn" onclick="toggleEdit('edit-form-meme-{{ loop.index }}', '{{ meme.meme_id }}', '{{ meme.type }}', '{{ meme.meme_description }}', '{{ meme.meme_download_counts }}', this)">Edit</button>
+                                <button class="edit-btn" onclick="toggleEdit('edit-form-meme-{{ loop.index }}', '{{ meme.meme_id }}', '{{ meme.type }}', '{{ meme.meme_description }}', '{{ meme.meme_url }}', '{{ meme.meme_download_counts }}', '{{ meme.owner }}', this)">Edit</button>
                             </td>
                             <td>
                                 <form method="POST" style="display: inline;">
@@ -302,12 +313,13 @@
                             </td>
                         </tr>
                         <tr class="edit-form" id="edit-form-meme-{{ loop.index }}" style="display: none;">
-                            <td colspan="7">
+                            <td colspan="8">
                                 <form method="POST">
                                     <input type="hidden" name="edit_meme_id" value="{{ meme.meme_id }}">
                                     <input type="text" name="new_type" placeholder="New Type" value="{{ meme.type }}" required>
                                     <input type="text" name="new_description" placeholder="New Description" value="{{ meme.meme_description }}" required>
                                     <input type="text" name="new_meme_url" placeholder="New URL" value="{{ meme.meme_url }}" required>
+                                    <input type="number" name="new_owner" placeholder="New Owner ID" value="{{ meme.owner }}" min="1" required>
                                     <input type="number" name="new_download_counts" placeholder="Download Counts" value="{{ meme.meme_download_counts }}" min="0" required>
                                     <button type="submit" class="save-btn" name="save_meme">Save</button>
                                 </form>
@@ -315,18 +327,19 @@
                         </tr>
                     {% endfor %}
                     <tr>
-                        <td colspan="7">
-                            <button class="add-btn" onclick="toggleEdit('add-form-meme', '', '', '', '', this)">Add Meme</button>
+                        <td colspan="8">
+                            <button class="add-btn" onclick="toggleEdit('add-form-meme', '', '', '', '', '', '', this)">Add Meme</button>
                         </td>
                     </tr>
                     <tr class="edit-form" id="add-form-meme" style="display: none;">
-                        <td colspan="7">
+                        <td colspan="8">
                             <form method="POST">
                                 <input type="hidden" name="add_meme" value="true">
                                 <input type="number" name="new_meme_id" placeholder="Meme ID" value="{{ next_meme_id }}" required>
                                 <input type="text" name="new_type" placeholder="New Type" required>
                                 <input type="text" name="new_description" placeholder="New Description" required>
                                 <input type="text" name="new_meme_url" placeholder="New URL" required>
+                                <input type="number" name="new_owner" placeholder="Owner ID" min="1" required>
                                 <input type="number" name="new_download_counts" placeholder="Download Counts" min="0" value="0" required>
                                 <button type="submit" class="save-btn" name="save_meme">Save</button>
                             </form>
@@ -345,7 +358,7 @@
     </div>
 
     <script>
-        function toggleEdit(formId, id, typeOrUsername, descriptionOrPassword, countsOrPoints, button) {
+        function toggleEdit(formId, id, typeOrUsername, descriptionOrPassword, urlOrPoints, countsOrNothing, ownerOrNothing, button) {
             const form = document.getElementById(formId);
             const isEditing = form.style.display === 'table-row';
 
@@ -361,7 +374,9 @@
                 if (!formId.includes('add')) {
                     inputs[1].value = typeOrUsername; // Set type or username
                     inputs[2].value = descriptionOrPassword; // Set description or password
-                    inputs[3].value = countsOrPoints; // Set download counts or points
+                    inputs[3].value = urlOrPoints; // Set URL or points
+                    inputs[4].value = ownerOrNothing; // Set owner ID
+                    inputs[5].value = countsOrNothing; // Set download counts
                 } else if (formId === 'add-form-meme') {
                     // Pre-populate meme_id if not already set
                     if (!inputs[1].value) {
