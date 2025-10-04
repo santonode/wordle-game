@@ -183,6 +183,60 @@
         .download-link:hover {
             text-decoration: underline;
         }
+        /* Popup styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 2px solid #263238;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 2000;
+            width: 300px;
+            text-align: center;
+        }
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1500;
+        }
+        .popup h3 {
+            margin: 0 0 15px;
+            color: #263238;
+        }
+        .popup input {
+            width: 80%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .popup button {
+            padding: 8px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .popup .register-btn {
+            background-color: #26A69A;
+            color: white;
+        }
+        .popup .decline-btn {
+            background-color: #FFCA28;
+            color: black;
+        }
+        .popup button:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -247,6 +301,19 @@
         <p>Made with ❤️ by Team Santo</p>
     </div>
 
+    <!-- Popup for first-time guest users -->
+    <div id="guestPopup" class="popup">
+        <h3>Welcome to Santo!</h3>
+        <p>Create a username and password to become a Member, or continue as a guest.</p>
+        <form id="guestForm" method="POST" action="/memes/register">
+            <input type="text" name="register_username" placeholder="Username (1-12 alphanumeric)" required>
+            <input type="password" name="register_password" placeholder="Password" required>
+            <button type="submit" class="register-btn">Register</button>
+        </form>
+        <button class="decline-btn" onclick="closePopup()">Continue as Guest</button>
+    </div>
+    <div id="popupOverlay" class="popup-overlay"></div>
+
     <script>
         function incrementAndDownload(memeId, url) {
             fetch(`/increment_download/${memeId}`, {
@@ -274,6 +341,45 @@
                 alert('An error occurred. Please try again.');
             });
         }
+
+        // Show popup for first-time guest users
+        document.addEventListener('DOMContentLoaded', function() {
+            const username = "{{ username }}";
+            const userType = "{{ user_type }}";
+            const showedPopup = sessionStorage.getItem('showedGuestPopup');
+            if (username && userType === 'Guest' && !showedPopup) {
+                document.getElementById('guestPopup').style.display = 'block';
+                document.getElementById('popupOverlay').style.display = 'block';
+                sessionStorage.setItem('showedGuestPopup', 'true');
+            }
+        });
+
+        function closePopup() {
+            document.getElementById('guestPopup').style.display = 'none';
+            document.getElementById('popupOverlay').style.display = 'none';
+        }
+
+        // Handle form submission and refresh
+        document.getElementById('guestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch('/memes/register', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error during registration:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
     </script>
 </body>
 </html>
