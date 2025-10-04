@@ -846,6 +846,49 @@ def memes():
         print(f"Unexpected error in memes: {str(e)}")
         return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0)
 
+@app.route('/memes/register', methods=['POST'])
+def memes_register():
+    ip_address = request.remote_addr
+    username = session.get('username')
+    user_type = session.get('user_type', 'Guest')
+    points = 0
+    word_list = 'words.txt'
+
+    if not username:
+        username = generate_username(ip_address)
+        session['username'] = username
+
+    message = None
+    if request.method == 'POST' and 'register' in request.form:
+        new_username = request.form.get('register_username', '').strip()
+        new_password = request.form.get('register_password', '')
+        if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
+            try:
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
+                        if cur.fetchone():
+                            message = "Username already taken."
+                        else:
+                            cur.execute('INSERT INTO users (ip_address, username, password, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s, %s)', 
+                                      (ip_address, new_username, hash_password(new_password), 'Member', 0, 'words.txt'))
+                            cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                            conn.commit()
+                            session.clear()  # Clear session on registration
+                            session['username'] = new_username  # Update to registered username
+                            session['user_type'] = 'Member'
+                            session['word_list'] = 'words.txt'  # Default word list for new users
+                            user_type = 'Member'
+                            points = 0
+                            message = "Registration successful! You are now a Member."
+            except psycopg.Error as e:
+                print(f"Database error during registration: {str(e)}")
+                message = "Error during registration."
+        else:
+            message = "Username must be 1-12 alphanumeric characters."
+
+    return jsonify({'message': message, 'success': message == "Registration successful! You are now a Member."})
+
 @app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
 def add_point_and_redirect(meme_id, url):
     try:
