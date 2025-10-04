@@ -6,11 +6,17 @@
     <title>Santo - Asset List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
+        body {
+            min-height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         .header {
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #263238; /* Navy */
+            background-color: #263238;
             color: white;
             padding: 5px 0;
             text-align: center;
@@ -61,19 +67,19 @@
         }
         .content {
             margin-top: 50px;
-            margin-bottom: 40px;
-            min-height: calc(100vh - 85px);
+            margin-bottom: 0;
+            min-height: calc(100vh - 75px);
             padding-top: 5px;
             text-align: center;
-            padding-bottom: 60px;
+            padding-bottom: 45px; /* Ensure space for footer */
         }
         .summary {
             font-size: 1.2em;
-            margin-bottom: 10px;
+            margin-bottom: 5px; /* Reduced from 10px */
             color: #333;
             font-weight: bold;
             position: sticky;
-            top: 55px;
+            top: 50px; /* Adjusted to reduce gap */
             background-color: #fff;
             z-index: 10;
             padding: 5px 10px;
@@ -83,7 +89,7 @@
         .meme-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 60px;
+            margin-top: 0; /* Removed to reduce white space */
         }
         .meme-table th, .meme-table td {
             border: 1px solid #ddd;
@@ -129,9 +135,9 @@
             }
             .summary {
                 font-size: 0.9em;
-                top: 55px;
+                top: 50px;
                 padding: 2px 5px;
-                margin-top: 0;
+                margin-bottom: 2px; /* Further reduced */
             }
             .meme-table {
                 display: block;
