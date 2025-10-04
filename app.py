@@ -821,13 +821,30 @@ def memes():
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
                 total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
                 print(f"Debug - Memes fetched: {memes}, users: {users}, meme_count: {meme_count}, total_downloads: {total_downloads}")
-        return render_template('memes.html', memes=memes, users=users, meme_count=meme_count, total_downloads=total_downloads)
+        
+        # Retrieve session data for username display
+        username = session.get('username')
+        user_type = session.get('user_type', 'Guest')  # Default to 'Guest'
+        points = 0  # Default points
+        if username:
+            try:
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
+                        result = cur.fetchone()
+                        if result:
+                            user_type, points = result
+                            session['user_type'] = user_type  # Update session
+            except psycopg.Error as e:
+                print(f"Database error fetching user_type for memes: {str(e)}")
+
+        return render_template('memes.html', memes=memes, users=users, meme_count=meme_count, total_downloads=total_downloads, username=username, user_type=user_type, points=points if user_type != 'Guest' else None, message=None)
     except psycopg.Error as e:
         print(f"Database error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
+        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0)
     except Exception as e:
         print(f"Unexpected error in memes: {str(e)}")
-        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0)
+        return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0)
 
 @app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
 def add_point_and_redirect(meme_id, url):
