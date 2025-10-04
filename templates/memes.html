@@ -71,15 +71,15 @@
             min-height: calc(100vh - 75px);
             padding-top: 5px;
             text-align: center;
-            padding-bottom: 45px; /* Ensure space for footer */
+            padding-bottom: 45px;
         }
         .summary {
             font-size: 1.2em;
-            margin-bottom: 5px; /* Reduced from 10px */
+            margin-bottom: 5px;
             color: #333;
             font-weight: bold;
             position: sticky;
-            top: 50px; /* Adjusted to reduce gap */
+            top: 50px;
             background-color: #fff;
             z-index: 10;
             padding: 5px 10px;
@@ -89,7 +89,7 @@
         .meme-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 0; /* Removed to reduce white space */
+            margin-top: 0;
         }
         .meme-table th, .meme-table td {
             border: 1px solid #ddd;
@@ -137,7 +137,7 @@
                 font-size: 0.9em;
                 top: 50px;
                 padding: 2px 5px;
-                margin-bottom: 2px; /* Further reduced */
+                margin-bottom: 2px;
             }
             .meme-table {
                 display: block;
@@ -191,7 +191,7 @@
         {% if username and user_type == 'Member' and points is not none %}
             <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
         {% elif username %}
-            <a href="/" class="user-info">{{ username }}</a>
+            <a href="/" class="user-info">guest</a>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
