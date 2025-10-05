@@ -362,22 +362,31 @@
         // Handle form submission and refresh
         document.getElementById('guestForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            const formData = new FormData(this);
             fetch('/memes/register', {
                 method: 'POST',
-                body: new FormData(this)
+                body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.message) {
                     alert(data.message);
                     if (data.success) {
                         window.location.reload();
+                    } else {
+                        closePopup(); // Close popup on failure to allow retry
                     }
                 }
             })
             .catch(error => {
                 console.error('Error during registration:', error);
                 alert('An error occurred. Please try again.');
+                closePopup(); // Close popup on error to allow retry
             });
         });
     </script>
