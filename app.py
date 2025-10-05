@@ -859,7 +859,7 @@ def memes_register():
         session['username'] = username
 
     message = None
-    if request.method == 'POST' and 'register' in request.form:
+    if request.method == 'POST':
         new_username = request.form.get('register_username', '').strip()
         new_password = request.form.get('register_password', '')
         if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
@@ -881,11 +881,13 @@ def memes_register():
                             user_type = 'Member'
                             points = 0
                             message = "Registration successful! You are now a Member."
+                            print(f"Debug - Registration successful for {new_username}")
             except psycopg.Error as e:
                 print(f"Database error during registration: {str(e)}")
                 message = "Error during registration."
         else:
             message = "Username must be 1-12 alphanumeric characters."
+            print(f"Debug - Invalid username: {new_username}")
 
     return jsonify({'message': message, 'success': message == "Registration successful! You are now a Member."})
 
