@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config['UPLOAD_FOLDER'] = 'thumbnails'
+app.config['UPLOAD_FOLDER'] = 'thumbnails'  # Relative to static folder
 app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg'}
 
 # Get database URL and admin password from environment
@@ -25,6 +25,13 @@ if not DATABASE_URL or not ADMIN_PASS:
 # Check if file has allowed extension
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+# Custom Jinja filter to check if a static file exists
+def url_exists(path):
+    return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
+
+app.jinja_env.filters['url_exists'] = url_exists
+app.jinja_env.filters['get_download_url'] = get_download_url
 
 # Initialize Postgres database
 def init_db():
@@ -207,9 +214,6 @@ def get_download_url(url):
             file_id = match.group(1)
             return f"https://drive.google.com/uc?export=download&id={file_id}"
     return url
-
-# Register the custom filter
-app.jinja_env.filters['get_download_url'] = get_download_url
 
 # Initialize database on app startup
 init_db()
@@ -604,11 +608,11 @@ def admin():
                 if file.filename == '':
                     message = "No file selected"
                 elif file and allowed_file(file.filename):
-                    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                        os.makedirs(app.config['UPLOAD_FOLDER'])
+                    if not os.path.exists(os.path.join(app.static_folder, 'thumbnails')):
+                        os.makedirs(os.path.join(app.static_folder, 'thumbnails'))
                     filename = secure_filename(f"{meme_id}.jpg")
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    message = f"Thumbnail uploaded successfully for meme ID {meme_id}"
+                    file.save(os.path.join(app.static_folder, 'thumbnails', filename))
+                    message = f"Thumbnail uploaded successfully for asset ID {meme_id}"
                 else:
                     message = "File type not allowed. Please upload a .jpg or .jpeg file."
 
