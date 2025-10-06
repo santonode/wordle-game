@@ -9,15 +9,22 @@ import matplotlib.dates as mdates
 import hashlib
 import psycopg
 import re
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+app.config['UPLOAD_FOLDER'] = 'thumbnails'
+app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg'}
 
 # Get database URL and admin password from environment
 DATABASE_URL = os.environ.get('DATABASE_URL')
 ADMIN_PASS = os.environ.get('ADMIN_PASS')
 if not DATABASE_URL or not ADMIN_PASS:
     raise ValueError("DATABASE_URL and ADMIN_PASS environment variables must be set")
+
+# Check if file has allowed extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 # Initialize Postgres database
 def init_db():
@@ -588,6 +595,22 @@ def admin():
                     message = f"Error adding user {new_username}: {str(e)}"
             else:
                 message = "Username must be 1-12 alphanumeric characters."
+        elif 'upload_thumbnail' in request.form:
+            if 'thumbnail' not in request.files:
+                message = "No file part"
+            else:
+                file = request.files['thumbnail']
+                meme_id = request.form.get('meme_id', type=int)
+                if file.filename == '':
+                    message = "No file selected"
+                elif file and allowed_file(file.filename):
+                    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                        os.makedirs(app.config['UPLOAD_FOLDER'])
+                    filename = secure_filename(f"{meme_id}.jpg")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    message = f"Thumbnail uploaded successfully for meme ID {meme_id}"
+                else:
+                    message = "File type not allowed. Please upload a .jpg or .jpeg file."
 
     if not authenticated:
         return render_template('admin.html', authenticated=False, message=message)
