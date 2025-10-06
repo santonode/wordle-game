@@ -30,6 +30,15 @@ def allowed_file(filename):
 def url_exists(path):
     return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
 
+# Custom filter to transform Google Drive URL to download link
+def get_download_url(url):
+    if url and 'drive.google.com/file/d/' in url:
+        match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
+        if match:
+            file_id = match.group(1)
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+    return url
+
 app.jinja_env.filters['url_exists'] = url_exists
 app.jinja_env.filters['get_download_url'] = get_download_url
 
@@ -205,15 +214,6 @@ def get_next_id(table_name):
     except psycopg.Error as e:
         print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
         return 1  # Fallback to 1 if error occurs
-
-# Custom filter to transform Google Drive URL to download link
-def get_download_url(url):
-    if url and 'drive.google.com/file/d/' in url:
-        match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
-        if match:
-            file_id = match.group(1)
-            return f"https://drive.google.com/uc?export=download&id={file_id}"
-    return url
 
 # Initialize database on app startup
 init_db()
