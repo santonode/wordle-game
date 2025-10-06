@@ -181,6 +181,25 @@
             margin-top: 10px;
             color: #FFCA28;
         }
+        .upload-form {
+            margin-top: 20px;
+        }
+        .upload-form input[type="file"] {
+            padding: 5px;
+            font-size: 14px;
+        }
+        .upload-form button {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #26A69A;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .upload-form button:hover {
+            background-color: #1e7d71;
+        }
 
         @media (max-width: 600px) {
             .user-table, .meme-table {
@@ -347,6 +366,13 @@
                     </tr>
                 </tbody>
             </table>
+            <div class="upload-form">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="number" name="meme_id" placeholder="Meme ID" required>
+                    <input type="file" name="thumbnail" accept=".jpg,.jpeg" required>
+                    <button type="submit" name="upload_thumbnail">Upload Thumbnail</button>
+                </form>
+            </div>
             {% if message %}
                 <div class="message">{{ message }}</div>
             {% endif %}
