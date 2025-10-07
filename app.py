@@ -29,7 +29,7 @@ if not DATABASE_URL or not ADMIN_PASS:
 
 print(f"Debug - App initialized with DATABASE_URL: {DATABASE_URL is not None}, ADMIN_PASS: {ADMIN_PASS is not None}")
 
-# Register Jinja filters
+# Register Jinja filters at app initialization
 def register_jinja_filters(app):
     def url_exists(path):
         return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
@@ -49,9 +49,12 @@ def register_jinja_filters(app):
     
     app.jinja_env.filters['url_exists'] = url_exists
     app.jinja_env.filters['get_download_url'] = get_download_url
-    print("Debug - Jinja filters registered: url_exists, get_download_url")
+    print("Debug - Jinja filters registered at initialization: url_exists, get_download_url")
 
-# Ensure filters are registered for every request
+# Register filters at startup
+register_jinja_filters(app)
+
+# Ensure filters are registered for every request (backup mechanism)
 def ensure_filters():
     if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
         print("Debug - Filters missing, re-registering Jinja filters before request")
@@ -842,7 +845,7 @@ def leader():
 @app.route('/memes')
 def memes():
     print(f"Debug - Entering /memes route, Jinja filters: {app.jinja_env.filters.keys()}")
-    # Verify filters are present, fail fast if not
+    # Verify filters are present before rendering
     if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
         print(f"Debug - Critical error: Filters not available - {app.jinja_env.filters.keys()}")
         return render_template('memes.html', memes=[], users=[], message="Internal server error: Filters unavailable.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0), 500
