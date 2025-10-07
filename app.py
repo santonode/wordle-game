@@ -838,7 +838,7 @@ def memes():
                 cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type, owner FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4], 'owner': row[5]} for row in cur.fetchall()]
                 cur.execute('SELECT id, username FROM users')
-                users = [{'id': row[0], 'username': word[1]} for row in cur.fetchall()]
+                users = [{'id': row[0], 'username': row[1]} for row in cur.fetchall()]  # Fixed typo: row[1] instead of word[1]
                 cur.execute('SELECT COUNT(*) FROM memes')
                 meme_count = cur.fetchone()[0]
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
