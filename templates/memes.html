@@ -258,7 +258,7 @@
         {% if username and user_type == 'Member' and points is not none %}
             <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
         {% elif username %}
-            <a href="/" class="user-info">guest</a>
+            <a href="/" class="user-info">{{ username }} (guest)</a>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
@@ -303,7 +303,7 @@
                         <td class="meme-description">
                             {% set download_url = meme.meme_url|get_download_url(meme.meme_description) %}
                             {% if download_url %}
-                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}', {{ url_exists('videos/' ~ meme.meme_description|string ~ '.mpg') | tojson }})">{{ meme.meme_description }}</a>
+                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url|safe }}', {{ url_exists('videos/' ~ meme.meme_description|string ~ '.mpg') | tojson }})">{{ meme.meme_description }}</a>
                             {% else %}
                                 <span>{{ meme.meme_description }}</span>
                             {% endif %} /
@@ -350,7 +350,7 @@
                     const link = document.createElement('a');
                     link.href = url;
                     // Set a reasonable default filename if local, otherwise let browser handle it
-                    link.download = isLocal ? `${meme.meme_description}.mpg` : '';
+                    link.download = isLocal ? `${memeId}.mpg` : ''; // Updated to use memeId instead of meme_description
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
