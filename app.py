@@ -46,6 +46,7 @@ def get_download_url(url, meme_description):
             return f"https://drive.google.com/uc?export=download&id={file_id}"
     return url
 
+# Register Jinja filters at app creation
 app.jinja_env.filters['url_exists'] = url_exists
 app.jinja_env.filters['get_download_url'] = get_download_url
 
