@@ -294,19 +294,18 @@
                         <td class="meme-type">{{ meme.type }}</td>
                         <td>
                             {% if meme.meme_id is not none and meme.meme_id | int > 0 %}
-                                {% set thumbnail_path = url_for('static', filename='thumbnails/' ~ meme.meme_id ~ '.jpg') %}
-                                {% if thumbnail_path is defined and thumbnail_path | length > 0 %}
+                                {% set thumbnail_path = url_for('static', filename='thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
+                                {% if url_exists('thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
                                     <img src="{{ thumbnail_path }}" alt="Thumbnail for asset {{ meme.meme_id }}">
                                 {% endif %}
                             {% endif %}
                         </td>
                         <td class="meme-description">
-                            {% set local_video_path = url_for('static', filename='videos/' ~ meme.meme_id ~ '.mp4') %}
-                            {% set download_url = meme.meme_url|get_download_url if not url_exists(local_video_path) else local_video_path %}
-                            {% if download_url and (download_url != meme.meme_url or url_exists(local_video_path)) %}
-                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}', {{ url_exists(local_video_path) | tojson }})">{{ meme.meme_description }}</a>
+                            {% set download_url = meme.meme_url|get_download_url(meme.meme_description) %}
+                            {% if download_url %}
+                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}', {{ url_exists('videos/' ~ meme.meme_description|string ~ '.mpg') | tojson }})">{{ meme.meme_description }}</a>
                             {% else %}
-                                <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
+                                <span>{{ meme.meme_description }}</span>
                             {% endif %} /
                             {% set owner = users|selectattr('id', 'equalto', meme.owner)|first %}
                             {{ owner.username if owner else 'Unknown' }}
@@ -351,7 +350,7 @@
                     const link = document.createElement('a');
                     link.href = url;
                     // Set a reasonable default filename if local, otherwise let browser handle it
-                    link.download = isLocal ? `${memeId}.mp4` : '';
+                    link.download = isLocal ? `${meme.meme_description}.mpg` : '';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
