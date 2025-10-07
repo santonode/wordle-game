@@ -30,9 +30,17 @@ def allowed_file(filename):
 def url_exists(path):
     return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
 
-# Custom filter to transform Google Drive URL to download link
-def get_download_url(url):
-    if url and 'drive.google.com/file/d/' in url:
+# Custom filter to transform URL to download link, checking local videos first
+def get_download_url(url, meme_description):
+    if not url:
+        return url
+    # Sanitize meme_description for filename (replace non-alphanumeric chars with underscores)
+    safe_description = re.sub(r'[^a-zA-Z0-9]', '_', meme_description).strip('_')
+    local_video_path = os.path.join(app.static_folder, 'videos', f"{safe_description}.mpg")
+    if os.path.exists(local_video_path):
+        return url_for('static', filename=f'videos/{os.path.basename(local_video_path)}')
+    # Fallback to Google Drive URL if no local video
+    if 'drive.google.com/file/d/' in url:
         match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
         if match:
             file_id = match.group(1)
