@@ -25,32 +25,33 @@ if not DATABASE_URL or not ADMIN_PASS:
 
 print(f"Debug - App initialized with DATABASE_URL: {DATABASE_URL is not None}, ADMIN_PASS: {ADMIN_PASS is not None}")
 
+# Register Jinja filters immediately after app creation
+def register_jinja_filters(app):
+    def url_exists(path):
+        return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
+    
+    def get_download_url(url, meme_description):
+        if not url:
+            return url
+        local_video_path = os.path.join(app.static_folder, 'videos', f"{meme_description}.mpg")
+        if os.path.exists(local_video_path):
+            return url_for('static', filename=f'videos/{os.path.basename(local_video_path)}')
+        if 'drive.google.com/file/d/' in url:
+            match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
+            if match:
+                file_id = match.group(1)
+                return f"https://drive.google.com/uc?export=download&id={file_id}"
+        return url
+    
+    app.jinja_env.filters['url_exists'] = url_exists
+    app.jinja_env.filters['get_download_url'] = get_download_url
+    print("Debug - Jinja filters registered: url_exists, get_download_url")
+
+register_jinja_filters(app)
+
 # Check if file has allowed extension
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-# Custom Jinja filter to check if a static file exists
-def url_exists(path):
-    return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
-
-# Custom filter to transform URL to download link, checking local videos first
-def get_download_url(url, meme_description):
-    if not url:
-        return url
-    local_video_path = os.path.join(app.static_folder, 'videos', f"{meme_description}.mpg")
-    if os.path.exists(local_video_path):
-        return url_for('static', filename=f'videos/{os.path.basename(local_video_path)}')
-    if 'drive.google.com/file/d/' in url:
-        match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
-        if match:
-            file_id = match.group(1)
-            return f"https://drive.google.com/uc?export=download&id={file_id}"
-    return url
-
-# Register Jinja filters during app configuration
-app.jinja_env.filters['url_exists'] = url_exists
-app.jinja_env.filters['get_download_url'] = get_download_url
-print("Debug - Jinja filters registered: url_exists, get_download_url")
 
 # Initialize Postgres database
 def init_db():
@@ -832,13 +833,17 @@ def leader():
 @app.route('/memes')
 def memes():
     print(f"Debug - Entering /memes route, Jinja filters: {app.jinja_env.filters.keys()}")
+    # Safeguard to re-register filters if missing
+    if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
+        print("Debug - Filters missing, re-registering Jinja filters")
+        register_jinja_filters(app)
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type, owner FROM memes ORDER BY meme_id')
-                memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4], 'owner': row[5]} for row in cur.fetchall()]
+                memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4], 'owner': row[5]} for row in cur.fetchall()]
                 cur.execute('SELECT id, username FROM users')
-                users = [{'id': row[0], 'username': row[1]} for row in cur.fetchall()]  # Fixed typo: row[1] instead of word[1]
+                users = [{'id': row[0], 'username': row[1]} for row in cur.fetchall()]
                 cur.execute('SELECT COUNT(*) FROM memes')
                 meme_count = cur.fetchone()[0]
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
