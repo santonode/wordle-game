@@ -45,15 +45,10 @@ def get_download_url(url, meme_description):
             return f"https://drive.google.com/uc?export=download&id={file_id}"
     return url
 
-# Manually register Jinja filters during app setup
-def setup_app():
-    if 'url_exists' not in app.jinja_env.filters:
-        app.jinja_env.filters['url_exists'] = url_exists
-        app.jinja_env.filters['get_download_url'] = get_download_url
-        print("Filters registered during app setup")
-
-# Call setup_app after app creation
-setup_app()
+# Register Jinja filters during app configuration
+app.jinja_env.filters['url_exists'] = url_exists
+app.jinja_env.filters['get_download_url'] = get_download_url
+print("Jinja filters registered during app configuration")
 
 # Initialize Postgres database
 def init_db():
