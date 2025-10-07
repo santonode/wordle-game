@@ -7,7 +7,7 @@ import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import hashlib
-import psycopg
+import psycopg2  # Changed from import psycopg to import psycopg2
 import re
 from werkzeug.utils import secure_filename
 
@@ -59,7 +59,7 @@ setup_app()
 # Initialize Postgres database
 def init_db():
     try:
-        with psycopg.connect(DATABASE_URL) as conn:
+        with psycopg2.connect(DATABASE_URL) as conn:  # Changed to psycopg2.connect
             with conn.cursor() as cur:
                 # Check if key tables exist and have data
                 cur.execute("""
@@ -158,7 +158,7 @@ def init_db():
                 ''')
                 conn.commit()
         print(f"Database initialized successfully with URL: {DATABASE_URL}")
-    except psycopg.Error as e:
+    except psycopg2.Error as e:  # Changed to psycopg2.Error
         print(f"Database initialization error: {str(e)}")
         raise
     except Exception as e:
@@ -183,7 +183,7 @@ def get_daily_word():
     available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
     print(f"Attempting to get daily word for {today} with list {word_list}")
     try:
-        with psycopg.connect(DATABASE_URL) as conn:
+        with psycopg2.connect(DATABASE_URL) as conn:  # Changed to psycopg2.connect
             with conn.cursor() as cur:
                 cur.execute('SELECT word FROM daily_word WHERE date = %s AND word_list = %s', (today, word_list))
                 result = cur.fetchone()
@@ -197,7 +197,7 @@ def get_daily_word():
                     conn.commit()
                     print(f"Inserted new word: {word}")
                     return word
-    except psycopg.Error as e:
+    except psycopg2.Error as e:  # Changed to psycopg2.Error
         print(f"Database error in get_daily_word: {str(e)}")
         return random.choice(available_words)  # Fallback to random word
     except Exception as e:
@@ -219,13 +219,13 @@ def hash_password(password):
 # Get next available ID for a table
 def get_next_id(table_name):
     try:
-        with psycopg.connect(DATABASE_URL) as conn:
+        with psycopg2.connect(DATABASE_URL) as conn:  # Changed to psycopg2.connect
             with conn.cursor() as cur:
                 # Use the actual primary key column name (e.g., meme_id for memes table)
                 column_name = {'memes': 'meme_id', 'users': 'id'}.get(table_name.split('_')[0], f"{table_name.split('_')[0]}_id")
                 cur.execute(f'SELECT COALESCE(MAX({column_name}), 0) + 1 FROM {table_name}')
                 return cur.fetchone()[0]
-    except psycopg.Error as e:
+    except psycopg2.Error as e:  # Changed to psycopg2.Error
         print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
         return 1  # Fallback to 1 if error occurs
 
