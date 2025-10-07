@@ -53,6 +53,10 @@
             padding: 2px 5px;
             line-height: 1;
             text-decoration: none;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .header .gear-icon {
             position: absolute;
@@ -69,9 +73,8 @@
             margin-top: 50px;
             margin-bottom: 0;
             min-height: calc(100vh - 75px);
-            padding-top: 5px;
+            padding: 5px 10px;
             text-align: center;
-            padding-bottom: 45px;
         }
         .summary {
             font-size: 1.2em;
@@ -136,7 +139,7 @@
         }
         .meme-table img {
             max-width: 100%;
-            max-height: 50px; /* Maintains row height consistency */
+            max-height: 50px;
             display: block;
         }
         @media (max-width: 600px) {
@@ -165,10 +168,6 @@
             .header .user-info {
                 font-size: 12px;
                 padding: 1px 3px;
-                max-width: 120px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
             }
         }
         .footer {
@@ -195,6 +194,11 @@
         }
         .download-link:hover {
             text-decoration: underline;
+        }
+        .message {
+            color: #d32f2f;
+            margin-top: 10px;
+            font-weight: bold;
         }
         /* Popup styles */
         .popup {
@@ -247,6 +251,10 @@
             background-color: #FFCA28;
             color: black;
         }
+        .popup .loading {
+            display: none;
+            color: #263238;
+        }
         .popup button:hover {
             opacity: 0.9;
         }
@@ -297,7 +305,11 @@
                                 {% set thumbnail_path = url_for('static', filename='thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
                                 {% if url_exists('thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
                                     <img src="{{ thumbnail_path }}" alt="Thumbnail for asset {{ meme.meme_id }}">
+                                {% else %}
+                                    <span>No thumbnail</span>
                                 {% endif %}
+                            {% else %}
+                                <span>N/A</span>
                             {% endif %}
                         </td>
                         <td class="meme-description">
@@ -331,6 +343,7 @@
             <input type="text" name="register_username" placeholder="Username (1-12 alphanumeric)" required>
             <input type="password" name="register_password" placeholder="Password" required>
             <button type="submit" class="register-btn">Register</button>
+            <span class="loading">Processing...</span>
         </form>
         <button class="decline-btn" onclick="closePopup()">Continue as Guest</button>
     </div>
@@ -349,8 +362,7 @@
                 if (data.success) {
                     const link = document.createElement('a');
                     link.href = url;
-                    // Set a reasonable default filename if local, otherwise let browser handle it
-                    link.download = isLocal ? `${memeId}.mpg` : ''; // Updated to use memeId instead of meme_description
+                    link.download = isLocal ? `${memeId}.mpg` : '';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -382,10 +394,15 @@
             document.getElementById('popupOverlay').style.display = 'none';
         }
 
-        // Handle form submission and refresh
+        // Handle form submission and refresh with loading state
         document.getElementById('guestForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
+            const form = this;
+            const submitBtn = form.querySelector('.register-btn');
+            const loading = form.querySelector('.loading');
+            submitBtn.disabled = true;
+            loading.style.display = 'inline';
+            const formData = new FormData(form);
             fetch('/memes/register', {
                 method: 'POST',
                 body: formData
@@ -402,14 +419,18 @@
                     if (data.success) {
                         window.location.reload();
                     } else {
-                        closePopup(); // Close popup on failure to allow retry
+                        closePopup();
                     }
                 }
             })
             .catch(error => {
                 console.error('Error during registration:', error);
                 alert('An error occurred. Please try again.');
-                closePopup(); // Close popup on error to allow retry
+                closePopup();
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
             });
         });
     </script>
