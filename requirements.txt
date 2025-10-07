@@ -1,4 +1,4 @@
-flask>=2.0.0,<3.0.0
+Flask==2.3.3
 matplotlib==3.7.1
 gunicorn
 uvicorn==0.22.0
