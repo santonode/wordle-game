@@ -1,5 +1,5 @@
-Flask==2.3.2
+flask>=2.0.0,<3.0.0
 matplotlib==3.7.1
-gunicorn==23.0.0
+gunicorn
 uvicorn==0.22.0
-psycopg==3.2.2  # Updated to psycopg3, compatible with Python 3.13
+psycopg2-binary
