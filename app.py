@@ -226,6 +226,14 @@ def get_next_id(table_name):
 # Initialize database on app startup
 init_db()
 
+# Ensure filters are available before first request
+@app.before_first_request
+def ensure_filters():
+    if 'url_exists' not in app.jinja_env.filters:
+        app.jinja_env.filters['url_exists'] = url_exists
+        app.jinja_env.filters['get_download_url'] = get_download_url
+        print("Filters registered in before_first_request")
+
 # Global error handler
 @app.errorhandler(Exception)
 def handle_exception(e):
