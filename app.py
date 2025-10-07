@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, before_request
 import random
 from datetime import date, datetime
 import os
@@ -25,7 +25,7 @@ if not DATABASE_URL or not ADMIN_PASS:
 
 print(f"Debug - App initialized with DATABASE_URL: {DATABASE_URL is not None}, ADMIN_PASS: {ADMIN_PASS is not None}")
 
-# Register Jinja filters immediately after app creation
+# Register Jinja filters
 def register_jinja_filters(app):
     def url_exists(path):
         return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
@@ -47,7 +47,12 @@ def register_jinja_filters(app):
     app.jinja_env.filters['get_download_url'] = get_download_url
     print("Debug - Jinja filters registered: url_exists, get_download_url")
 
-register_jinja_filters(app)
+# Ensure filters are registered for every request
+@before_request
+def ensure_filters():
+    if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
+        print("Debug - Filters missing, re-registering Jinja filters before request")
+        register_jinja_filters(app)
 
 # Check if file has allowed extension
 def allowed_file(filename):
@@ -833,10 +838,10 @@ def leader():
 @app.route('/memes')
 def memes():
     print(f"Debug - Entering /memes route, Jinja filters: {app.jinja_env.filters.keys()}")
-    # Safeguard to re-register filters if missing
+    # Verify filters are present, fail fast if not
     if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
-        print("Debug - Filters missing, re-registering Jinja filters")
-        register_jinja_filters(app)
+        print(f"Debug - Critical error: Filters not available - {app.jinja_env.filters.keys()}")
+        return render_template('memes.html', memes=[], users=[], message="Internal server error: Filters unavailable.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0), 500
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
