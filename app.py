@@ -1,5 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
-import flask
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 from datetime import date, datetime
 import os
@@ -8,18 +7,11 @@ import base64
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import hashlib
-import psycopg2
+import psycopg
 import re
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config['UPLOAD_FOLDER'] = 'static/thumbnails'
-app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg'}
-app.config['VIDEO_FOLDER'] = 'static/videos'
-
-# Log Flask version and initial setup
-print(f"Debug - Starting app with Flask version: {flask.__version__}")
 
 # Get database URL and admin password from environment
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -27,49 +19,12 @@ ADMIN_PASS = os.environ.get('ADMIN_PASS')
 if not DATABASE_URL or not ADMIN_PASS:
     raise ValueError("DATABASE_URL and ADMIN_PASS environment variables must be set")
 
-print(f"Debug - App initialized with DATABASE_URL: {DATABASE_URL is not None}, ADMIN_PASS: {ADMIN_PASS is not None}")
-
-# Register Jinja filters at app initialization
-def register_jinja_filters(app):
-    def url_exists(path):
-        return os.path.exists(os.path.join(app.static_folder, path.lstrip('/')))
-    
-    def get_download_url(url, meme_description):
-        if not url:
-            return url
-        local_video_path = os.path.join(app.static_folder, 'videos', f"{meme_description}.mpg")
-        if os.path.exists(local_video_path):
-            return url_for('static', filename=f'videos/{os.path.basename(local_video_path)}')
-        if 'drive.google.com/file/d/' in url:
-            match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
-            if match:
-                file_id = match.group(1)
-                return f"https://drive.google.com/uc?export=download&id={file_id}"
-        return url
-    
-    app.jinja_env.filters['url_exists'] = url_exists
-    app.jinja_env.filters['get_download_url'] = get_download_url
-    print("Debug - Jinja filters registered at initialization: url_exists, get_download_url")
-
-# Register filters at startup
-register_jinja_filters(app)
-
-# Ensure filters are registered for every request (backup mechanism)
-def ensure_filters():
-    if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
-        print("Debug - Filters missing, re-registering Jinja filters before request")
-        register_jinja_filters(app)
-app.before_request(ensure_filters)
-
-# Check if file has allowed extension
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
 # Initialize Postgres database
 def init_db():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
+                # Check if key tables exist and have data
                 cur.execute("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
@@ -82,9 +37,9 @@ def init_db():
                     cur.execute("SELECT COUNT(*) FROM memes")
                     meme_count = cur.fetchone()[0]
                     if meme_count > 0:
-                        print(f"Debug - Memes table already contains {meme_count} records, skipping full reinitialization.")
+                        print(f"Memes table already contains {meme_count} records, skipping full reinitialization.")
                     else:
-                        print("Debug - Memes table exists but is empty, initializing with default data.")
+                        print("Memes table exists but is empty, initializing with default data.")
                         cur.execute('DROP TABLE IF EXISTS memes')
                         cur.execute('''
                             CREATE TABLE IF NOT EXISTS memes (
@@ -96,6 +51,7 @@ def init_db():
                                 owner INTEGER DEFAULT 3
                             )
                         ''')
+                        # Insert default meme with owner
                         cur.execute('''
                             INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner)
                             VALUES (%s, %s, %s, %s, %s, %s)
@@ -103,7 +59,7 @@ def init_db():
                         ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM', 3))
                         conn.commit()
                 else:
-                    print("Debug - Memes table does not exist, creating and initializing.")
+                    print("Memes table does not exist, creating and initializing.")
                     cur.execute('''
                         CREATE TABLE IF NOT EXISTS memes (
                             meme_id INTEGER PRIMARY KEY,
@@ -114,6 +70,7 @@ def init_db():
                             owner INTEGER DEFAULT 3
                         )
                     ''')
+                    # Insert default meme with owner
                     cur.execute('''
                         INSERT INTO memes (meme_id, meme_url, meme_description, meme_download_counts, type, owner)
                         VALUES (%s, %s, %s, %s, %s, %s)
@@ -121,6 +78,7 @@ def init_db():
                     ''', (1, 'https://drive.google.com/file/d/1rKLbOKw88TKBLKhxnrAVEqxy4ZTB0gLv/view?usp=drive_link', 'Good Morning Good Morning 3', 0, 'GM', 3))
                     conn.commit()
 
+                # Initialize other tables (daily_word, game_logs, users, user_stats) only if they don't exist
                 cur.execute('DROP TABLE IF EXISTS daily_word')
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS daily_word (
@@ -162,12 +120,12 @@ def init_db():
                     )
                 ''')
                 conn.commit()
-        print(f"Debug - Database initialized successfully with URL: {DATABASE_URL}")
-    except psycopg2.Error as e:
-        print(f"Debug - Database initialization error: {str(e)}")
+        print(f"Database initialized successfully with URL: {DATABASE_URL}")
+    except psycopg.Error as e:
+        print(f"Database initialization error: {str(e)}")
         raise
     except Exception as e:
-        print(f"Debug - Unexpected error during initialization: {str(e)}")
+        print(f"Unexpected error during initialization: {str(e)}")
         raise
 
 # Load word lists
@@ -177,43 +135,43 @@ try:
     with open('words-pets.txt', 'r') as f:
         WORDS_PETS = [word.strip().upper() for word in f.readlines()]
 except FileNotFoundError as e:
-    print(f"Debug - Error loading word lists: {str(e)}")
+    print(f"Error: {str(e)}")
     WORDS_ALL = ['APPLE', 'BREAD', 'CLOUD', 'DREAM']  # Fallback list
     WORDS_PETS = ['DOG', 'CAT', 'BIRD', 'FISH']  # Fallback list
 
 # Get or set daily word based on selected word list
 def get_daily_word():
     today = str(date.today())
-    word_list = session.get('word_list', 'words.txt')
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
     available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
-    print(f"Debug - Attempting to get daily word for {today} with list {word_list}")
+    print(f"Attempting to get daily word for {today} with list {word_list}")
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT word FROM daily_word WHERE date = %s AND word_list = %s', (today, word_list))
                 result = cur.fetchone()
                 if result:
                     word = result[0]
-                    print(f"Debug - Found existing word: {word}")
+                    print(f"Found existing word: {word}")
                     return word
                 else:
                     word = random.choice(available_words)
                     cur.execute('INSERT INTO daily_word (date, word_list, word) VALUES (%s, %s, %s)', (today, word_list, word))
                     conn.commit()
-                    print(f"Debug - Inserted new word: {word}")
+                    print(f"Inserted new word: {word}")
                     return word
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in get_daily_word: {str(e)}")
-        return random.choice(available_words)
+    except psycopg.Error as e:
+        print(f"Database error in get_daily_word: {str(e)}")
+        return random.choice(available_words)  # Fallback to random word
     except Exception as e:
-        print(f"Debug - Unexpected error in get_daily_word: {str(e)}")
-        return random.choice(available_words)
+        print(f"Unexpected error in get_daily_word: {str(e)}")
+        return random.choice(available_words)  # Fallback to random word
 
 # Generate username based on IP and session data
 def generate_username(ip_address):
     seed = f"{ip_address}{datetime.now().microsecond}{random.randint(1000, 9999)}"
     hash_object = hashlib.md5(seed.encode())
-    hash_hex = hash_object.hexdigest()[:8]
+    hash_hex = hash_object.hexdigest()[:8]  # Take first 8 characters for brevity
     username = ''.join(c for c in hash_hex if c.isalnum()).upper()[:12]
     return username
 
@@ -224,14 +182,27 @@ def hash_password(password):
 # Get next available ID for a table
 def get_next_id(table_name):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
+                # Use the actual primary key column name (e.g., meme_id for memes table)
                 column_name = {'memes': 'meme_id', 'users': 'id'}.get(table_name.split('_')[0], f"{table_name.split('_')[0]}_id")
                 cur.execute(f'SELECT COALESCE(MAX({column_name}), 0) + 1 FROM {table_name}')
                 return cur.fetchone()[0]
-    except psycopg2.Error as e:
-        print(f"Debug - Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
-        return 1
+    except psycopg.Error as e:
+        print(f"Database error getting next {table_name.split('_')[0]} ID: {str(e)}")
+        return 1  # Fallback to 1 if error occurs
+
+# Custom filter to transform Google Drive URL to download link
+def get_download_url(url):
+    if url and 'drive.google.com/file/d/' in url:
+        match = re.search(r'https://drive.google.com/file/d/([^/]+)/view\?usp=drive_link', url)
+        if match:
+            file_id = match.group(1)
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+    return url
+
+# Register the custom filter
+app.jinja_env.filters['get_download_url'] = get_download_url
 
 # Initialize database on app startup
 init_db()
@@ -247,46 +218,40 @@ def index():
     today = str(date.today())
     last_played = session.get('last_played_date')
     username = session.get('username')
-    user_type = session.get('user_type', 'Guest')
-    points = session.get('points', 0)
-    word_list = session.get('word_list', 'words.txt')
+    user_type = session.get('user_type', 'Guest')  # Default from session
+    points = 0  # Default points
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
     
+    # Clear session if no guesses or new day, but preserve username if it exists
     if not session.get('guesses') or (last_played and last_played != today):
         session['guesses'] = []
         session['game_over'] = False
         session['hard_mode'] = False
         session['last_played_date'] = today if not last_played else None
         if not username:
-            ip_address = request.remote_addr or 'unknown'
+            ip_address = request.remote_addr
             username = generate_username(ip_address)
             session['username'] = username
-            print(f"Debug - New username generated: {username}")
-            try:
-                with psycopg2.connect(DATABASE_URL) as conn:
-                    with conn.cursor() as cur:
-                        cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
-                        if not cur.fetchone():
-                            cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
-                                        (ip_address, username, 'Guest', 0, word_list))
-                            cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                            conn.commit()
-            except psycopg2.Error as e:
-                print(f"Debug - Database error initializing guest user: {str(e)}")
+            print(f"Debug - New username generated: {username}")  # Debug
+            # No database write here, only set in session
         else:
+            # Fetch user_type, points, and word_list for existing username if already in DB
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('SELECT user_type, points, word_list FROM users WHERE username = %s', (username,))
                         result = cur.fetchone()
                         if result:
                             user_type, points, db_word_list = result
-                            session['user_type'] = user_type
-                            session['word_list'] = db_word_list
+                            session['user_type'] = user_type  # Update session
+                            session['word_list'] = db_word_list  # Update session with word list
                             print(f"Debug - Fetched user_type: {user_type}, points: {points}, word_list: {db_word_list} for {username}")
-            except psycopg2.Error as e:
-                print(f"Debug - Database error fetching user_type: {str(e)}")
+            except psycopg.Error as e:
+                print(f"Database error fetching user_type: {str(e)}")
 
+    # Block only if the game was completed today for the current user, pass share_text
     share_text = session.get('share_text') if session.get('game_over') else None
+    print(f"Debug - Session guesses: {session.get('guesses')}, game_over: {session.get('game_over')}")  # Debug
     if username and session.get('last_played_date') == today and session.get('game_over', False):
         return render_template('index.html', game_blocked=True, message="You've already played today's puzzle. Use 'Clear Session' to test again!", username=username, user_type=user_type, points=points if user_type != 'Guest' else None, share_text=share_text, guesses=session.get('guesses', []), game_over=session.get('game_over', False), word_list=word_list)
     
@@ -297,19 +262,18 @@ def wordlist():
     username = session.get('username')
     if username:
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                     result = cur.fetchone()
                     if result:
                         user_id, user_type = result
-                        if user_type != 'Guest':
+                        if user_type != 'Guest':  # Deduct points only for non-guest users
                             cur.execute('UPDATE users SET points = GREATEST(points - 1, 0) WHERE id = %s', (user_id,))
                             conn.commit()
-                            cur.execute('SELECT points FROM users WHERE id = %s', (user_id,))
-                            print(f"Debug - Deducted 1 point for user {username}, new points: {cur.fetchone()[0]}")
-        except psycopg2.Error as e:
-            print(f"Debug - Database error deducting point for wordlist: {str(e)}")
+                            print(f"Debug - Deducted 1 point for user {username}, new points: {cur.execute('SELECT points FROM users WHERE id = %s', (user_id,)).fetchone()[0]}")
+        except psycopg.Error as e:
+            print(f"Database error deducting point for wordlist: {str(e)}")
     word_list = session.get('word_list', 'words.txt')
     words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
     return render_template('wordlist.html', words=words)
@@ -317,7 +281,7 @@ def wordlist():
 @app.route('/stats')
 def stats():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('''
                     SELECT date(timestamp) as day, 
@@ -336,7 +300,7 @@ def stats():
         wins = [row[1] for row in data]
         losses = [row[2] for row in data]
         
-        fig, ax = plt.subplots(figsize=(9, 6))
+        fig, ax = plt.subplots(figsize=(9, 6))  # Set width to ~900px (9 inches at 100dpi)
         ax.bar(days, wins, label='Wins', color='green')
         ax.bar(days, losses, bottom=wins, label='Losses', color='red')
         ax.set_xlabel('Date')
@@ -348,54 +312,47 @@ def stats():
         plt.tight_layout()
         
         buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100)
+        plt.savefig(buf, format='png', dpi=100)  # Ensure 900px width with dpi=100
         buf.seek(0)
         chart = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close(fig)
         
+        # Prepare table data
         table_data = data
+        
         return render_template('stats.html', chart=chart, table_data=table_data)
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in stats: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in stats: {str(e)}")
         return render_template('stats.html', chart=None, table_data=None)
     except Exception as e:
-        print(f"Debug - Unexpected error in stats: {str(e)}")
+        print(f"Unexpected error in stats: {str(e)}")
         return render_template('stats.html', chart=None, table_data=None)
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    ip_address = request.remote_addr or 'unknown'
+    ip_address = request.remote_addr
     username = session.get('username')
-    user_type = session.get('user_type', 'Guest')
-    points = session.get('points', 0)
-    word_list = session.get('word_list', 'words.txt')
+    user_type = session.get('user_type', 'Guest')  # Default from session
+    points = 0  # Default points
+    word_list = session.get('word_list', 'words.txt')  # Default to words.txt
 
     if not username:
         username = generate_username(ip_address)
         session['username'] = username
-        try:
-            with psycopg2.connect(DATABASE_URL) as conn:
-                with conn.cursor() as cur:
-                    cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
-                    if not cur.fetchone():
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
-                                    (ip_address, username, 'Guest', 0, word_list))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-        except psycopg2.Error as e:
-            print(f"Debug - Database error initializing guest user: {str(e)}")
+        # No database write here, only set in session
     else:
+        # Fetch user_type, points, and word_list for existing username if already in DB
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT user_type, points, word_list FROM users WHERE username = %s', (username,))
                     result = cur.fetchone()
                     if result:
                         user_type, points, db_word_list = result
-                        session['user_type'] = user_type
-                        session['word_list'] = db_word_list
-        except psycopg2.Error as e:
-            print(f"Debug - Database error fetching user_type: {str(e)}")
+                        session['user_type'] = user_type  # Update session
+                        session['word_list'] = db_word_list  # Update session with word list
+        except psycopg.Error as e:
+            print(f"Database error fetching user_type: {str(e)}")
 
     wins = 0
     losses = 0
@@ -403,7 +360,7 @@ def profile():
     games_played = 0
     avg_guesses = 0.0
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT id FROM users WHERE username = %s', (username,))
                 user_id = cur.fetchone()
@@ -417,8 +374,8 @@ def profile():
                     else:
                         cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (user_id,))
                         conn.commit()
-    except psycopg2.Error as e:
-        print(f"Debug - Database error fetching stats: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error fetching stats: {str(e)}")
 
     message = None
     if request.method == 'POST':
@@ -426,8 +383,8 @@ def profile():
             current_username = session.get('username')
             session.clear()
             session['username'] = current_username
-            session['user_type'] = user_type
-            session['word_list'] = word_list
+            session['user_type'] = user_type  # Preserve user_type
+            session['word_list'] = word_list  # Preserve word_list
             session['guesses'] = []
             session['game_over'] = False
             session['hard_mode'] = False
@@ -437,33 +394,34 @@ def profile():
             password = request.form.get('login_password', '')
             if username and password:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             hashed_password = hash_password(password)
+                            print(f"Attempting login for {username} with hashed password: {hashed_password}")
                             cur.execute('SELECT user_type, points, password, word_list FROM users WHERE username = %s', (username,))
                             result = cur.fetchone()
                             if result:
                                 stored_user_type, stored_points, stored_password, stored_word_list = result
                                 if stored_password == hashed_password:
-                                    session.clear()
-                                    session['username'] = username
-                                    session['user_type'] = stored_user_type
-                                    session['word_list'] = stored_word_list
+                                    session.clear()  # Always clear session on login
+                                    session['username'] = username  # Update to registered username
+                                    session['user_type'] = stored_user_type  # Set to 'Member' for registered users
+                                    session['word_list'] = stored_word_list  # Set to stored word list
                                     points = stored_points
                                     message = "Login successful!"
                                 else:
                                     message = "Invalid username or password."
                             else:
                                 message = "Invalid username or password."
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error during login: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error during login: {str(e)}")
                     message = "Error during login."
         elif 'register' in request.form:
             new_username = request.form.get('register_username', '').strip()
             new_password = request.form.get('register_password', '')
             if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
                             if cur.fetchone():
@@ -473,31 +431,31 @@ def profile():
                                           (ip_address, new_username, hash_password(new_password), 'Member', 0, 'words.txt'))
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                                 conn.commit()
-                                session.clear()
-                                session['username'] = new_username
+                                session.clear()  # Clear session on registration
+                                session['username'] = new_username  # Update to registered username
                                 session['user_type'] = 'Member'
-                                session['word_list'] = 'words.txt'
+                                session['word_list'] = 'words.txt'  # Default word list for new users
                                 user_type = 'Member'
                                 points = 0
                                 message = "Registration successful! You are now a Member."
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error during registration: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error during registration: {str(e)}")
                     message = "Error during registration."
         elif 'change_word_list' in request.form:
             new_word_list = request.form.get('word_list')
             if new_word_list in ['words.txt', 'words-pets.txt']:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             cur.execute('UPDATE users SET word_list = %s WHERE username = %s', (new_word_list, username))
                             conn.commit()
-                            session['word_list'] = new_word_list
-                            session['guesses'] = []
+                            session['word_list'] = new_word_list  # Update session
+                            session['guesses'] = []  # Clear guesses to reset game
                             session['game_over'] = False
-                            session['last_played_date'] = None
+                            session['last_played_date'] = None  # Allow new game
                             message = f"Word list changed to {new_word_list.split('-')[0] if '-' in new_word_list else new_word_list}. Game reset!"
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error changing word list: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error changing word list: {str(e)}")
                     message = "Error changing word list."
 
     return render_template('profile.html', username=session['username'], user_type=user_type, points=points, message=message, wins=wins, losses=losses, avg_guesses=avg_guesses, word_list=word_list)
@@ -506,6 +464,8 @@ def profile():
 def admin():
     message = None
     authenticated = session.get('admin_authenticated', False)
+
+    # Get next available meme ID for the template
     next_meme_id = get_next_id('memes')
 
     if request.method == 'POST':
@@ -519,7 +479,7 @@ def admin():
         elif 'delete' in request.form:
             delete_username = request.form.get('delete_username')
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('DELETE FROM users WHERE username = %s RETURNING id', (delete_username,))
                         user_id = cur.fetchone()
@@ -529,8 +489,8 @@ def admin():
                             message = f"User {delete_username} deleted successfully."
                         else:
                             message = f"User {delete_username} not found."
-            except psycopg2.Error as e:
-                print(f"Debug - Database error during delete: {str(e)}")
+            except psycopg.Error as e:
+                print(f"Database error during delete: {str(e)}")
                 message = f"Error deleting user {delete_username}: {str(e)}"
         elif 'save' in request.form:
             edit_username = request.form.get('edit_username')
@@ -539,7 +499,7 @@ def admin():
             new_points = request.form.get('new_points', 0, type=int)
             if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             cur.execute('SELECT 1 FROM users WHERE username = %s AND username != %s', (new_username, edit_username))
                             if cur.fetchone():
@@ -549,15 +509,15 @@ def admin():
                                           (new_username, hash_password(new_password), new_points, edit_username))
                                 conn.commit()
                                 message = f"User {edit_username} updated to {new_username} successfully."
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error during update: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error during update: {str(e)}")
                     message = f"Error updating user {edit_username}: {str(e)}"
             else:
                 message = "Username must be 1-12 alphanumeric characters."
         elif 'delete_meme' in request.form:
             delete_meme_id = request.form.get('delete_meme_id', type=int)
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('DELETE FROM memes WHERE meme_id = %s', (delete_meme_id,))
                         if cur.rowcount > 0:
@@ -565,8 +525,8 @@ def admin():
                             message = f"Meme with ID {delete_meme_id} deleted successfully."
                         else:
                             message = f"Meme with ID {delete_meme_id} not found."
-            except psycopg2.Error as e:
-                print(f"Debug - Database error during meme delete: {str(e)}")
+            except psycopg.Error as e:
+                print(f"Database error during meme delete: {str(e)}")
                 message = f"Error deleting meme with ID {delete_meme_id}: {str(e)}"
         elif 'save_meme' in request.form:
             meme_id = request.form.get('edit_meme_id' if 'edit_meme_id' in request.form else 'new_meme_id', type=int)
@@ -581,7 +541,7 @@ def admin():
             valid_types = ['Other', 'GM', 'GN', 'Crypto', 'Grawk']
             if new_type in valid_types and new_description and new_meme_url and new_owner is not None:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             if 'edit_meme_id' in request.form:
                                 cur.execute('UPDATE memes SET type = %s, meme_description = %s, meme_url = %s, owner = %s, meme_download_counts = %s WHERE meme_id = %s',
@@ -600,8 +560,8 @@ def admin():
                                               (meme_id, new_meme_url, new_description, new_download_counts, new_type, new_owner))
                                     conn.commit()
                                     message = f"Meme added successfully with ID {meme_id}."
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error during meme update/add: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error during meme update/add: {str(e)}")
                     message = f"Error {'updating' if 'edit_meme_id' in request.form else 'adding'} meme with ID {meme_id}: {str(e)}"
             else:
                 message = "Invalid type, empty description, empty URL, or invalid owner ID. Type must be one of: Other, GM, GN, Crypto, Grawk. Owner ID must be a valid integer."
@@ -611,7 +571,7 @@ def admin():
             new_points = request.form.get('new_points', 0, type=int)
             if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
                 try:
-                    with psycopg2.connect(DATABASE_URL) as conn:
+                    with psycopg.connect(DATABASE_URL) as conn:
                         with conn.cursor() as cur:
                             cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
                             if cur.fetchone():
@@ -623,33 +583,17 @@ def admin():
                                 cur.execute('INSERT INTO user_stats (user_id) VALUES (%s)', (new_user_id,))
                                 conn.commit()
                                 message = f"User {new_username} added successfully with ID {new_user_id}."
-                except psycopg2.Error as e:
-                    print(f"Debug - Database error during user add: {str(e)}")
+                except psycopg.Error as e:
+                    print(f"Database error during user add: {str(e)}")
                     message = f"Error adding user {new_username}: {str(e)}"
             else:
                 message = "Username must be 1-12 alphanumeric characters."
-        elif 'upload_thumbnail' in request.form:
-            if 'thumbnail' not in request.files:
-                message = "No file part"
-            else:
-                file = request.files['thumbnail']
-                meme_id = request.form.get('meme_id', type=int)
-                if file.filename == '':
-                    message = "No file selected"
-                elif file and allowed_file(file.filename):
-                    if not os.path.exists(os.path.join(app.static_folder, 'thumbnails')):
-                        os.makedirs(os.path.join(app.static_folder, 'thumbnails'))
-                    filename = secure_filename(f"{meme_id}.jpg")
-                    file.save(os.path.join(app.static_folder, 'thumbnails', filename))
-                    message = f"Thumbnail uploaded successfully for asset ID {meme_id}"
-                else:
-                    message = "File type not allowed. Please upload a .jpg or .jpeg file."
 
     if not authenticated:
         return render_template('admin.html', authenticated=False, message=message)
 
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT id, username, password, points FROM users')
                 users = [{'id': row[0], 'username': row[1], 'password': row[2], 'points': row[3]} for row in cur.fetchall()]
@@ -657,35 +601,41 @@ def admin():
                 memes = [{'meme_id': row[0], 'type': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'meme_url': row[4], 'owner': row[5]} for row in cur.fetchall()]
                 print(f"Debug - Memes fetched in admin: {memes}")
         return render_template('admin.html', authenticated=True, users=users, memes=memes, message=message, next_meme_id=next_meme_id)
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in admin: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in admin: {str(e)}")
         message = "Error fetching user or meme data."
         return render_template('admin.html', authenticated=True, users=[], memes=[], message=message, next_meme_id=next_meme_id)
 
 @app.route('/guess', methods=['POST'])
 def guess():
     today = str(date.today())
-    print(f"Debug - Guess route called, session: {session}")
+    print(f"Debug - Guess route called, session: {session}")  # Add debugging
     username = session.get('username')
-    user_type = session.get('user_type', 'Guest')
-    ip_address = request.remote_addr or 'unknown'
-    word_list = session.get('word_list', 'words.txt')
+    user_type = session.get('user_type', 'Guest')  # Preserve user_type from session
+    ip_address = request.remote_addr  # Define ip_address at the start of the route
+    word_list = session.get('word_list', 'words.txt')  # Get current word list
     
+    # Initialize guest user in database only if not already present
     if not username:
         username = generate_username(ip_address)
         session['username'] = username
-        try:
-            with psycopg2.connect(DATABASE_URL) as conn:
-                with conn.cursor() as cur:
-                    cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
-                    if not cur.fetchone():
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
-                                  (ip_address, username, 'Guest', 0, word_list))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-        except psycopg2.Error as e:
-            print(f"Debug - Database error creating guest user: {str(e)}")
-            return jsonify({'error': 'Database error. Please try again later.'})
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
+                if not cur.fetchone():
+                    cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
+                              (ip_address, username, 'Guest', 0, word_list))
+                    cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
+                    conn.commit()
+                else:
+                    cur.execute('SELECT user_type, word_list FROM users WHERE username = %s', (username,))
+                    user_type, db_word_list = cur.fetchone()
+                    session['user_type'] = user_type  # Update session
+                    session['word_list'] = db_word_list  # Update session with word list
+    except psycopg.Error as e:
+        print(f"Database error creating or fetching guest user: {str(e)}")
+        return jsonify({'error': 'Database error. Please try again later.'})
 
     if session.get('last_played_date') == today and session.get('game_over', False):
         return jsonify({'error': 'You have already played today. Use \'Clear Session\' to test again!'})
@@ -694,16 +644,17 @@ def guess():
         return jsonify({'error': 'Game is over. Start a new game.'})
 
     guess = request.json.get('guess', '').upper()
-    print(f"Debug - Received guess: {guess}, username: {username}")
+    print(f"Debug - Received guess: {guess}, username: {username}")  # Add debugging
     hard_mode = session.get('hard_mode', False)
     target = get_daily_word()
-    print(f"Debug - Target word: {target}, username: {username}")
+    print(f"Debug - Target word: {target}, username: {username}")  # Add target for debugging
 
     available_words = WORDS_ALL if word_list == 'words.txt' else WORDS_PETS
     if len(guess) != 5 or guess not in available_words:
-        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in available_words}, username: {username}")
+        print(f"Debug - Invalid guess: {guess}, length: {len(guess)}, in WORDS: {guess in available_words}, username: {username}")  # Add debugging
         return jsonify({'error': 'Invalid word. Must be a 5-letter word from the selected list.'})
 
+    # Hard Mode: Check if guess uses all known green/yellow letters
     if hard_mode:
         known_letters = {}
         for g in session.get('guesses', []):
@@ -717,12 +668,14 @@ def guess():
             if guess_letters.get(letter, 0) < count:
                 return jsonify({'error': f'Hard Mode: Must use all known letters ({letter}).'})
 
-    result = ['gray'] * 5
+    # Evaluate guess
+    result = ['gray'] * 5  # Initialize with 5 gray elements
     target_counts = {}
     for letter in target:
         target_counts[letter] = target_counts.get(letter, 0) + 1
     guess_counts = {}
 
+    # First pass: Mark green letters
     all_green = True
     for i, (g, t) in enumerate(zip(guess, target)):
         if g == t:
@@ -730,18 +683,20 @@ def guess():
             guess_counts[g] = guess_counts.get(g, 0) + 1
         else:
             all_green = False
-    print(f"Debug - After first pass, result: {result}, all_green: {all_green}, username: {username}")
+    print(f"Debug - After first pass, result: {result}, all_green: {all_green}, username: {username}")  # Debug after first pass
 
+    # Second pass: Mark yellow letters only if not all green
     if not all_green:
         for i, (g, t) in enumerate(zip(guess, target)):
             if result[i] == 'gray' and g in target and guess_counts.get(g, 0) < target_counts.get(g, 0):
                 result[i] = 'yellow'
                 guess_counts[g] = guess_counts.get(g, 0) + 1
-    print(f"Debug - After second pass, result: {result}, username: {username}")
+    print(f"Debug - After second pass, result: {result}, username: {username}")  # Debug after second pass
 
     session['guesses'].append({'guess': guess, 'result': result})
     session.modified = True
 
+    # Check win/lose conditions
     game_over = False
     message = None
     win = 0
@@ -752,7 +707,7 @@ def guess():
         session['last_played_date'] = today
         message = f'Congratulations! You solved it in {len(session["guesses"])} guesses!'
         win = 1
-        points_change = 10
+        points_change = 10  # Add 10 points for a win
         print(f"Debug - Win condition met: guess={guess}, target={target}, guesses={len(session['guesses'])}, username={username}")
     elif len(session['guesses']) >= 6:
         game_over = True
@@ -760,12 +715,13 @@ def guess():
         session['last_played_date'] = today
         message = f'Game over! The word was {target}.'
         win = 0
-        points_change = -10
+        points_change = -10  # Subtract 10 points for a loss
         print(f"Debug - Lose condition met: guesses={len(session['guesses'])}, target={target}, username={username}")
 
     if game_over:
+        # Log the game session and update user stats and points
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                     db_result = cur.fetchone()
@@ -778,8 +734,8 @@ def guess():
                         conn.commit()
                         cur.execute('SELECT id, user_type FROM users WHERE username = %s', (username,))
                         user_id, user_type = cur.fetchone()
-                    session['user_type'] = user_type
-                    if user_type != 'Guest':
+                    session['user_type'] = user_type  # Update session to match DB
+                    if user_type != 'Guest':  # Ensure points are updated only for the intended user
                         cur.execute('INSERT INTO game_logs (timestamp, ip_address, username, win, guesses) VALUES (%s, %s, %s, %s, %s)', 
                                   (datetime.now(), ip_address, username, win, len(session['guesses'])))
                         cur.execute('''
@@ -793,20 +749,21 @@ def guess():
                         ''', (user_id, win, 1-win, len(session['guesses'])))
                         cur.execute('UPDATE users SET points = GREATEST(points + %s, 0) WHERE id = %s', (points_change, user_id))
                         conn.commit()
-                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}, username={username}")
+                        print(f"Debug - Game logged: user_id={user_id}, win={win}, guesses={len(session['guesses'])}, points_change={points_change}, username={username}, user_type={user_type}")
                     else:
                         print(f"Debug - Skipping points update for guest user: {username}")
-        except psycopg2.Error as e:
-            print(f"Debug - Database logging error: {str(e)}")
+        except psycopg.Error as e:
+            print(f"Database logging error: {str(e)}")
 
+    # Generate and store shareable result in session
     share_text = f"Wurdle {date.today().strftime('%Y-%m-%d')} {len(session['guesses'])}/6\n"
     for g in session['guesses']:
         share_text += ''.join({
             'green': '🟩', 'yellow': '🟨', 'gray': '⬜'
         }[color] for color in g['result']) + '\n'
-    session['share_text'] = share_text
+    session['share_text'] = share_text  # Store for display
 
-    print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}, username={username}")
+    print(f"Debug - Final result before jsonify: {result}, game_over: {game_over}, message: {message}, username={username}")  # Add debugging
     return jsonify({
         'guess': guess,
         'result': result,
@@ -823,90 +780,83 @@ def toggle_hard_mode():
     session.modified = True
     return jsonify({'hard_mode': session['hard_mode']})
 
+# Handle favicon request to prevent 500 error (optional, add static file for best practice)
 @app.route('/favicon.ico')
 def favicon():
-    return app.send_static_file('favicon.ico')
+    return app.send_static_file('favicon.ico')  # Ensure static/favicon.ico exists
 
 @app.route('/leader')
 def leader():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
+                # Fetch users sorted by points in descending order
                 cur.execute('SELECT id, username, points FROM users ORDER BY points DESC')
                 leaders = [{'id': row[0], 'username': row[1], 'points': row[2]} for row in cur.fetchall()]
         return render_template('leader.html', leaders=leaders)
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in leader: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in leader: {str(e)}")
         return render_template('leader.html', leaders=[])
     except Exception as e:
-        print(f"Debug - Unexpected error in leader: {str(e)}")
+        print(f"Unexpected error in leader: {str(e)}")
         return render_template('leader.html', leaders=[])
 
 @app.route('/memes')
 def memes():
-    print(f"Debug - Entering /memes route, Jinja filters: {app.jinja_env.filters.keys()}")
-    # Verify filters are present before rendering
-    if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
-        print(f"Debug - Critical error: Filters not available - {app.jinja_env.filters.keys()}")
-        return render_template('memes.html', memes=[], users=[], message="Internal server error: Filters unavailable.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0), 500
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
                 cur.execute('SELECT meme_id, meme_url, meme_description, meme_download_counts, type, owner FROM memes ORDER BY meme_id')
                 memes = [{'meme_id': row[0], 'meme_url': row[1], 'meme_description': row[2], 'meme_download_counts': row[3], 'type': row[4], 'owner': row[5]} for row in cur.fetchall()]
                 cur.execute('SELECT id, username FROM users')
                 users = [{'id': row[0], 'username': row[1]} for row in cur.fetchall()]
+                # Calculate total meme count and total downloads
                 cur.execute('SELECT COUNT(*) FROM memes')
                 meme_count = cur.fetchone()[0]
+                # Verify count against fetched data for debugging
+                verified_count = len(memes)
+                if meme_count != verified_count:
+                    print(f"Warning: Meme count mismatch - SQL COUNT: {meme_count}, Fetched rows: {verified_count}")
+                    meme_count = verified_count  # Use fetched count if mismatch
                 cur.execute('SELECT SUM(meme_download_counts) FROM memes')
-                total_downloads = cur.fetchone()[0] or 0
+                total_downloads = cur.fetchone()[0] or 0  # Default to 0 if NULL
                 print(f"Debug - Memes fetched: {memes}, users: {users}, meme_count: {meme_count}, total_downloads: {total_downloads}")
         
+        # Retrieve session data for username display
         username = session.get('username')
-        user_type = session.get('user_type', 'Guest')
-        points = session.get('points', 0)
+        user_type = session.get('user_type', 'Guest')  # Default to 'Guest'
+        points = 0  # Default points
         if username:
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('SELECT user_type, points FROM users WHERE username = %s', (username,))
                         result = cur.fetchone()
                         if result:
                             user_type, points = result
-                            session['user_type'] = user_type
-            except psycopg2.Error as e:
-                print(f"Debug - Database error fetching user_type for memes: {str(e)}")
+                            session['user_type'] = user_type  # Update session
+            except psycopg.Error as e:
+                print(f"Database error fetching user_type for memes: {str(e)}")
 
         return render_template('memes.html', memes=memes, users=users, meme_count=meme_count, total_downloads=total_downloads, username=username, user_type=user_type, points=points if user_type != 'Guest' else None, message=None)
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in memes: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in memes: {str(e)}")
         return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0)
     except Exception as e:
-        print(f"Debug - Unexpected error in memes: {str(e)}")
+        print(f"Unexpected error in memes: {str(e)}")
         return render_template('memes.html', memes=[], users=[], message="Error fetching meme data.", meme_count=0, total_downloads=0, username=None, user_type='Guest', points=0)
 
 @app.route('/memes/register', methods=['POST'])
 def memes_register():
-    ip_address = request.remote_addr or 'unknown'
+    ip_address = request.remote_addr
     username = session.get('username')
     user_type = session.get('user_type', 'Guest')
-    points = session.get('points', 0)
-    word_list = session.get('word_list', 'words.txt')
+    points = 0
+    word_list = 'words.txt'
 
     if not username:
         username = generate_username(ip_address)
         session['username'] = username
-        try:
-            with psycopg2.connect(DATABASE_URL) as conn:
-                with conn.cursor() as cur:
-                    cur.execute('SELECT 1 FROM users WHERE username = %s', (username,))
-                    if not cur.fetchone():
-                        cur.execute('INSERT INTO users (ip_address, username, user_type, points, word_list) VALUES (%s, %s, %s, %s, %s)',
-                                  (ip_address, username, 'Guest', 0, word_list))
-                        cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
-                        conn.commit()
-        except psycopg2.Error as e:
-            print(f"Debug - Database error initializing guest user: {str(e)}")
 
     message = None
     if request.method == 'POST':
@@ -914,7 +864,7 @@ def memes_register():
         new_password = request.form.get('register_password', '')
         if new_username and new_password and all(c.isalnum() for c in new_username) and 1 <= len(new_username) <= 12:
             try:
-                with psycopg2.connect(DATABASE_URL) as conn:
+                with psycopg.connect(DATABASE_URL) as conn:
                     with conn.cursor() as cur:
                         cur.execute('SELECT 1 FROM users WHERE username = %s', (new_username,))
                         if cur.fetchone():
@@ -924,16 +874,16 @@ def memes_register():
                                       (ip_address, new_username, hash_password(new_password), 'Member', 0, 'words.txt'))
                             cur.execute('INSERT INTO user_stats (user_id) VALUES (currval(\'users_id_seq\'))')
                             conn.commit()
-                            session.clear()
-                            session['username'] = new_username
+                            session.clear()  # Clear session on registration
+                            session['username'] = new_username  # Update to registered username
                             session['user_type'] = 'Member'
-                            session['word_list'] = 'words.txt'
+                            session['word_list'] = 'words.txt'  # Default word list for new users
                             user_type = 'Member'
                             points = 0
                             message = "Registration successful! You are now a Member."
                             print(f"Debug - Registration successful for {new_username}")
-            except psycopg2.Error as e:
-                print(f"Debug - Database error during registration: {str(e)}")
+            except psycopg.Error as e:
+                print(f"Database error during registration: {str(e)}")
                 message = "Error during registration."
         else:
             message = "Username must be 1-12 alphanumeric characters."
@@ -944,33 +894,42 @@ def memes_register():
 @app.route('/add_point_and_redirect/<int:meme_id>/<path:url>')
 def add_point_and_redirect(meme_id, url):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s', (meme_id,))
+                # Update download count for the specific meme_id
+                cur.execute(
+                    'UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s',
+                    (meme_id,)
+                )
                 conn.commit()
                 print(f"Debug - Incremented download count for meme_id {meme_id} to {cur.rowcount}")
+        # Redirect to the original URL
         return redirect(url, code=302)
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in add_point_and_redirect: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in add_point_and_redirect: {str(e)}")
         return "Error updating download count", 500
     except Exception as e:
-        print(f"Debug - Unexpected error in add_point_and_redirect: {str(e)}")
+        print(f"Unexpected error in add_point_and_redirect: {str(e)}")
         return "Error updating download count", 500
 
 @app.route('/increment_download/<int:meme_id>', methods=['POST'])
 def increment_download(meme_id):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute('UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s', (meme_id,))
+                # Update download count for the specific meme_id
+                cur.execute(
+                    'UPDATE memes SET meme_download_counts = meme_download_counts + 1 WHERE meme_id = %s',
+                    (meme_id,)
+                )
                 conn.commit()
                 print(f"Debug - Incremented download count for meme_id {meme_id} to {cur.rowcount}")
         return jsonify({'success': True})
-    except psycopg2.Error as e:
-        print(f"Debug - Database error in increment_download: {str(e)}")
+    except psycopg.Error as e:
+        print(f"Database error in increment_download: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
     except Exception as e:
-        print(f"Debug - Unexpected error in increment_download: {str(e)}")
+        print(f"Unexpected error in increment_download: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
