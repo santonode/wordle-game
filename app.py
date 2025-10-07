@@ -34,9 +34,8 @@ def url_exists(path):
 def get_download_url(url, meme_description):
     if not url:
         return url
-    # Sanitize meme_description for filename (replace non-alphanumeric chars with underscores)
-    safe_description = re.sub(r'[^a-zA-Z0-9]', '_', meme_description).strip('_')
-    local_video_path = os.path.join(app.static_folder, 'videos', f"{safe_description}.mpg")
+    # Use raw meme_description directly without sanitization
+    local_video_path = os.path.join(app.static_folder, 'videos', f"{meme_description}.mpg")
     if os.path.exists(local_video_path):
         return url_for('static', filename=f'videos/{os.path.basename(local_video_path)}')
     # Fallback to Google Drive URL if no local video
