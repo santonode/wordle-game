@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, before_request
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
+import flask
 import random
 from datetime import date, datetime
 import os
@@ -16,6 +17,9 @@ app.secret_key = os.urandom(24)
 app.config['UPLOAD_FOLDER'] = 'static/thumbnails'
 app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg'}
 app.config['VIDEO_FOLDER'] = 'static/videos'
+
+# Log Flask version and initial setup
+print(f"Debug - Starting app with Flask version: {flask.__version__}")
 
 # Get database URL and admin password from environment
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -48,11 +52,11 @@ def register_jinja_filters(app):
     print("Debug - Jinja filters registered: url_exists, get_download_url")
 
 # Ensure filters are registered for every request
-@before_request
 def ensure_filters():
     if 'url_exists' not in app.jinja_env.filters or 'get_download_url' not in app.jinja_env.filters:
         print("Debug - Filters missing, re-registering Jinja filters before request")
         register_jinja_filters(app)
+app.before_request(ensure_filters)
 
 # Check if file has allowed extension
 def allowed_file(filename):
