@@ -301,9 +301,10 @@
                             {% endif %}
                         </td>
                         <td class="meme-description">
-                            {% set download_url = meme.meme_url|get_download_url %}
-                            {% if download_url and download_url != meme.meme_url %}
-                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}')">{{ meme.meme_description }}</a>
+                            {% set local_video_path = url_for('static', filename='videos/' ~ meme.meme_id ~ '.mp4') %}
+                            {% set download_url = meme.meme_url|get_download_url if not url_exists(local_video_path) else local_video_path %}
+                            {% if download_url and (download_url != meme.meme_url or url_exists(local_video_path)) %}
+                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}', {{ url_exists(local_video_path) | tojson }})">{{ meme.meme_description }}</a>
                             {% else %}
                                 <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
                             {% endif %} /
@@ -337,7 +338,7 @@
     <div id="popupOverlay" class="popup-overlay"></div>
 
     <script>
-        function incrementAndDownload(memeId, url) {
+        function incrementAndDownload(memeId, url, isLocal) {
             fetch(`/increment_download/${memeId}`, {
                 method: 'POST',
                 headers: {
@@ -349,7 +350,8 @@
                 if (data.success) {
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = '';
+                    // Set a reasonable default filename if local, otherwise let browser handle it
+                    link.download = isLocal ? `${memeId}.mp4` : '';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
