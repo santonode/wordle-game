@@ -53,10 +53,6 @@
             padding: 2px 5px;
             line-height: 1;
             text-decoration: none;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
         .header .gear-icon {
             position: absolute;
@@ -73,8 +69,9 @@
             margin-top: 50px;
             margin-bottom: 0;
             min-height: calc(100vh - 75px);
-            padding: 5px 10px;
+            padding-top: 5px;
             text-align: center;
+            padding-bottom: 45px;
         }
         .summary {
             font-size: 1.2em;
@@ -98,7 +95,6 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
-            vertical-align: middle;
         }
         .meme-table th {
             background-color: #f2f2f2;
@@ -125,22 +121,13 @@
             width: 5%;
             min-width: 60px;
         }
-        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Thumb */
-            width: 10%;
-            min-width: 50px;
-        }
-        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Description / Owner */
-            width: 70%;
+        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description / Owner */
+            width: 80%;
             min-width: 150px;
         }
-        .meme-table th:nth-child(5), .meme-table td:nth-child(5) { /* Counts */
+        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Counts */
             width: 10%;
             min-width: 50px;
-        }
-        .meme-table img {
-            max-width: 100%;
-            max-height: 50px;
-            display: block;
         }
         @media (max-width: 600px) {
             .content {
@@ -159,15 +146,16 @@
             .meme-table th, .meme-table td {
                 min-width: 40px;
             }
-            .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Thumb */
-                min-width: 50px;
-            }
-            .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Description / Owner */
+            .meme-table th:nth-child(3), .meme-table td:nth-child(3) {
                 min-width: 150px;
             }
             .header .user-info {
                 font-size: 12px;
                 padding: 1px 3px;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
         }
         .footer {
@@ -194,11 +182,6 @@
         }
         .download-link:hover {
             text-decoration: underline;
-        }
-        .message {
-            color: #d32f2f;
-            margin-top: 10px;
-            font-weight: bold;
         }
         /* Popup styles */
         .popup {
@@ -251,10 +234,6 @@
             background-color: #FFCA28;
             color: black;
         }
-        .popup .loading {
-            display: none;
-            color: #263238;
-        }
         .popup button:hover {
             opacity: 0.9;
         }
@@ -266,7 +245,7 @@
         {% if username and user_type == 'Member' and points is not none %}
             <a href="/" class="user-info">{{ username }} {{ points }}pts</a>
         {% elif username %}
-            <a href="/" class="user-info">{{ username }} (guest)</a>
+            <a href="/" class="user-info">guest</a>
         {% endif %}
         <a href="/profile" class="gear-icon">⚙️</a>
     </div>
@@ -277,7 +256,6 @@
                 <tr>
                     <th><a href="?sort=id&order={{ 'asc' if request.args.get('sort') != 'id' or request.args.get('order') == 'desc' else 'desc' }}">ID</a></th>
                     <th><a href="?sort=type&order={{ 'asc' if request.args.get('sort') != 'type' or request.args.get('order') == 'desc' else 'desc' }}">Type</a></th>
-                    <th>Thumb</th>
                     <th><a href="?sort=description&order={{ 'asc' if request.args.get('sort') != 'description' or request.args.get('order') == 'desc' else 'desc' }}">Description / Owner</a></th>
                     <th><a href="?sort=counts&order={{ 'asc' if request.args.get('sort') != 'counts' or request.args.get('order') == 'desc' else 'desc' }}">Counts</a></th>
                 </tr>
@@ -300,24 +278,12 @@
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
-                        <td>
-                            {% if meme.meme_id is not none and meme.meme_id | int > 0 %}
-                                {% set thumbnail_path = url_for('static', filename='thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
-                                {% if url_exists('thumbnails/' ~ meme.meme_id|string ~ '.jpg') %}
-                                    <img src="{{ thumbnail_path }}" alt="Thumbnail for asset {{ meme.meme_id }}">
-                                {% else %}
-                                    <span>No thumbnail</span>
-                                {% endif %}
-                            {% else %}
-                                <span>N/A</span>
-                            {% endif %}
-                        </td>
                         <td class="meme-description">
-                            {% set download_url = meme.meme_url|get_download_url(meme.meme_description) %}
-                            {% if download_url %}
-                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url|safe }}', {{ url_exists('videos/' ~ meme.meme_description|string ~ '.mpg') | tojson }})">{{ meme.meme_description }}</a>
+                            {% set download_url = meme.meme_url|get_download_url %}
+                            {% if download_url and download_url != meme.meme_url %}
+                                <a class="download-link" href="javascript:void(0)" onclick="incrementAndDownload('{{ meme.meme_id }}', '{{ download_url }}')">{{ meme.meme_description }}</a>
                             {% else %}
-                                <span>{{ meme.meme_description }}</span>
+                                <a href="{{ meme.meme_url }}" target="_blank">{{ meme.meme_description }}</a>
                             {% endif %} /
                             {% set owner = users|selectattr('id', 'equalto', meme.owner)|first %}
                             {{ owner.username if owner else 'Unknown' }}
@@ -343,14 +309,13 @@
             <input type="text" name="register_username" placeholder="Username (1-12 alphanumeric)" required>
             <input type="password" name="register_password" placeholder="Password" required>
             <button type="submit" class="register-btn">Register</button>
-            <span class="loading">Processing...</span>
         </form>
         <button class="decline-btn" onclick="closePopup()">Continue as Guest</button>
     </div>
     <div id="popupOverlay" class="popup-overlay"></div>
 
     <script>
-        function incrementAndDownload(memeId, url, isLocal) {
+        function incrementAndDownload(memeId, url) {
             fetch(`/increment_download/${memeId}`, {
                 method: 'POST',
                 headers: {
@@ -362,7 +327,7 @@
                 if (data.success) {
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = isLocal ? `${memeId}.mpg` : '';
+                    link.download = '';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -394,15 +359,10 @@
             document.getElementById('popupOverlay').style.display = 'none';
         }
 
-        // Handle form submission and refresh with loading state
+        // Handle form submission and refresh
         document.getElementById('guestForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const form = this;
-            const submitBtn = form.querySelector('.register-btn');
-            const loading = form.querySelector('.loading');
-            submitBtn.disabled = true;
-            loading.style.display = 'inline';
-            const formData = new FormData(form);
+            const formData = new FormData(this);
             fetch('/memes/register', {
                 method: 'POST',
                 body: formData
@@ -419,18 +379,14 @@
                     if (data.success) {
                         window.location.reload();
                     } else {
-                        closePopup();
+                        closePopup(); // Close popup on failure to allow retry
                     }
                 }
             })
             .catch(error => {
                 console.error('Error during registration:', error);
                 alert('An error occurred. Please try again.');
-                closePopup();
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                loading.style.display = 'none';
+                closePopup(); // Close popup on error to allow retry
             });
         });
     </script>
