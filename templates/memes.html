@@ -121,13 +121,22 @@
             width: 5%;
             min-width: 60px;
         }
-        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Description / Owner */
-            width: 80%;
+        .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Thumb */
+            width: 10%;
+            min-width: 80px;
+        }
+        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Description / Owner */
+            width: 70%;
             min-width: 150px;
         }
-        .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Counts */
+        .meme-table th:nth-child(5), .meme-table td:nth-child(5) { /* Counts */
             width: 10%;
             min-width: 50px;
+        }
+        .meme-table img {
+            max-height: 100%;
+            max-width: 100%;
+            vertical-align: middle;
         }
         @media (max-width: 600px) {
             .content {
@@ -146,7 +155,10 @@
             .meme-table th, .meme-table td {
                 min-width: 40px;
             }
-            .meme-table th:nth-child(3), .meme-table td:nth-child(3) {
+            .meme-table th:nth-child(3), .meme-table td:nth-child(3) { /* Thumb */
+                min-width: 80px;
+            }
+            .meme-table th:nth-child(4), .meme-table td:nth-child(4) { /* Description / Owner */
                 min-width: 150px;
             }
             .header .user-info {
@@ -256,6 +268,7 @@
                 <tr>
                     <th><a href="?sort=id&order={{ 'asc' if request.args.get('sort') != 'id' or request.args.get('order') == 'desc' else 'desc' }}">ID</a></th>
                     <th><a href="?sort=type&order={{ 'asc' if request.args.get('sort') != 'type' or request.args.get('order') == 'desc' else 'desc' }}">Type</a></th>
+                    <th>Thumb</th>
                     <th><a href="?sort=description&order={{ 'asc' if request.args.get('sort') != 'description' or request.args.get('order') == 'desc' else 'desc' }}">Description / Owner</a></th>
                     <th><a href="?sort=counts&order={{ 'asc' if request.args.get('sort') != 'counts' or request.args.get('order') == 'desc' else 'desc' }}">Counts</a></th>
                 </tr>
@@ -278,6 +291,13 @@
                     <tr>
                         <td class="meme-id">{{ meme.meme_id }}</td>
                         <td class="meme-type">{{ meme.type }}</td>
+                        <td>
+                            {% if url_exists(url_for('static', filename='thumbnails/' ~ meme.meme_id ~ '.jpg')) %}
+                                <img src="{{ url_for('static', filename='thumbnails/' ~ meme.meme_id ~ '.jpg') }}" alt="Thumbnail for {{ meme.meme_description }}">
+                            {% else %}
+                                &nbsp;
+                            {% endif %}
+                        </td>
                         <td class="meme-description">
                             {% set download_url = meme.meme_url|get_download_url %}
                             {% if download_url and download_url != meme.meme_url %}
